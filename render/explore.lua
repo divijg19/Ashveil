@@ -277,8 +277,9 @@ function M.draw(state)
 
 	-- UI
 	love.graphics.print(
-		"HP: " .. state.player.hp ..
-		" | Enemies: " .. #(state.enemies or {}),
+		" Floor: " .. state.floor ..
+		"  | HP: " .. state.player.hp ..
+		"  | Enemies: " .. #(state.enemies or {}),
 		10,
 		10
 	)

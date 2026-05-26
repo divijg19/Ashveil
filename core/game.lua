@@ -5,7 +5,7 @@ local SceneManager = require("Engine.runtime.scene_manager")
 local Encounter = require("Engine.runtime.encounter")
 local WorldTick = require("Engine.runtime.world_tick")
 local Entities = require("Engine.runtime.entities")
-
+local Floor = require("Engine.runtime.floor")
 local Environment = require("Engine.runtime.environment")
 local SceneLoop = require("Engine.runtime.scene_loop")
 
@@ -114,6 +114,20 @@ function Game:player_turn(action)
 
 	self.player.x = nx
 	self.player.y = ny
+
+	if
+		self.player.x == self.exit.x
+		and
+		self.player.y == self.exit.y
+	then
+		Floor.next(
+			self,
+			Map,
+			Compositions
+		)
+
+		return
+	end
 end
 
 function Game:world_turn()
@@ -227,6 +241,7 @@ function Game:get_draw_data()
 		map = self.map,
 		rooms = self.rooms,
 		exit = self.exit,
+		floor = self.floor,
 
 		player = self.player,
 		enemies = self.enemies,
