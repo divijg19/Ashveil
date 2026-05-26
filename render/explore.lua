@@ -224,6 +224,27 @@ function M.draw(state)
 			)
 		end
 
+		elseif item.type == "exit" then
+			local sx, sy =
+				world_to_camera(
+					state,
+					item.x,
+					item.y
+				)
+
+			love.graphics.circle(
+				"line",
+				sx,
+				sy,
+				14
+			)
+
+			love.graphics.print(
+				">",
+				sx - 4,
+				sy - 8
+			)
+
 		elseif item.type == "enemy" then
 			local sx, sy =
 				world_to_camera(
