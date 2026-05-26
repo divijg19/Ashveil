@@ -35,6 +35,17 @@ function M.build(state)
 		})
 	end
 
+	-- exit
+	table.insert(queue, {
+		type = "exit",
+		x = state.exit.x,
+		y = state.exit.y,
+		depth =
+			state.exit.x +
+			state.exit.y +
+			0.4
+	})
+
 	-- enemies
 	for _, e in ipairs(state.enemies or {}) do
 		table.insert(queue, {

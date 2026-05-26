@@ -244,7 +244,15 @@ function M.create(width, height)
 		end
 	end
 
-	return map, rooms
+	local last_room =
+		rooms[#rooms]
+
+	local exit = {
+		x = last_room.center.x,
+		y = last_room.center.y,
+	}
+
+	return map, rooms, exit
 end
 
 return M

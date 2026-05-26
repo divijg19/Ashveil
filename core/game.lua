@@ -16,13 +16,21 @@ local ai = require("systems.ai")
 local Game = {}
 
 function Game:new()
-	local map, rooms = Map.create(80, 80)
+	local map, rooms, exit = Map.create(80, 80)
 
 	local spawn = rooms[1].center
 
 	local obj = {
 		map = map,
 		rooms = rooms,
+		exit = exit,
+
+		floor = 1,
+
+		seed =
+			love.math.random(
+				999999
+			),
 
 		player = {
 			x = spawn.x,
@@ -218,6 +226,7 @@ function Game:get_draw_data()
 	return {
 		map = self.map,
 		rooms = self.rooms,
+		exit = self.exit,
 
 		player = self.player,
 		enemies = self.enemies,
