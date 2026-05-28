@@ -197,6 +197,55 @@ function M.ruin(room)
 end
 
 -- ========================================
+-- Quiet
+-- ========================================
+
+function M.quiet(room, floor)
+	floor = floor or 1
+
+	local props = {}
+
+	-- glyphs on deeper floors
+	if floor >= 3 then
+		local count =
+			math.min(
+				math.floor(floor / 3),
+				4
+			)
+
+		for _ = 1, count do
+			local px =
+				love.math.random(
+					room.x + 1,
+					room.x + room.w - 2
+				)
+
+			local py =
+				love.math.random(
+					room.y + 1,
+					room.y + room.h - 2
+				)
+
+			add(props, px, py, "glyph")
+		end
+	end
+
+	-- occasional seal on deeper floors
+	if floor >= 6
+		and love.math.random() < 0.25
+	then
+		add(
+			props,
+			room.center.x,
+			room.center.y,
+			"seal"
+		)
+	end
+
+	return props
+end
+
+-- ========================================
 -- Hall
 -- ========================================
 

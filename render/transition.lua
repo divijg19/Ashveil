@@ -24,11 +24,35 @@ function M.draw(state)
 
 	love.graphics.setColor(1, 1, 1, 1)
 
-	love.graphics.print(
-		"A VEIL STIRS...",
-		w / 2 - 60,
-		h / 2
-	)
+	local data = t.data
+
+	if data and data.descent then
+		love.graphics.printf(
+			"~ Floor "
+				.. data.next_floor
+				.. " ~",
+			0,
+			h / 2 - 30,
+			w,
+			"center"
+		)
+
+		love.graphics.printf(
+			data.msg or "",
+			0,
+			h / 2 + 10,
+			w,
+			"center"
+		)
+	else
+		love.graphics.printf(
+			"A VEIL STIRS...",
+			0,
+			h / 2,
+			w,
+			"center"
+		)
+	end
 end
 
 return M
