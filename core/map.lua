@@ -178,8 +178,21 @@ end
 -- Geometry Rules
 -- ========================================
 
-local function generate_room_dimensions(room_type, floor)
+local function generate_room_dimensions(room_type, floor, anomaly)
 	floor = floor or 1
+
+	local scale = 1.0
+
+	if anomaly then
+		if anomaly.type == "geometry" then
+			scale = 1.3
+				+ love.math.random()
+				* 0.2
+
+		elseif anomaly.type == "dead" then
+			scale = 1.2
+		end
+	end
 
 	-- ====================================
 	-- Hall
@@ -192,19 +205,27 @@ local function generate_room_dimensions(room_type, floor)
 				4
 			)
 
+		local min_len = math.floor(
+			(14 + len_boost) * scale
+		)
+
+		local max_len = math.floor(
+			(20 + len_boost) * scale
+		)
+
 		if love.math.random() < 0.5 then
 			return
 				love.math.random(
-					14 + len_boost,
-					20 + len_boost
+					min_len,
+					max_len
 				),
 				love.math.random(4, 5)
 		else
 			return
 				love.math.random(4, 5),
 				love.math.random(
-					14 + len_boost,
-					20 + len_boost
+					min_len,
+					max_len
 				)
 		end
 
@@ -219,14 +240,22 @@ local function generate_room_dimensions(room_type, floor)
 				2
 			)
 
+		local sz = math.floor(
+			(12 + boost) * scale
+		)
+
+		local max_sz = math.floor(
+			(16 + boost) * scale
+		)
+
 		return
 			love.math.random(
-				12 + boost,
-				16 + boost
+				sz,
+				max_sz
 			),
 			love.math.random(
-				12 + boost,
-				16 + boost
+				sz,
+				max_sz
 			)
 
 	-- ====================================
@@ -240,14 +269,22 @@ local function generate_room_dimensions(room_type, floor)
 				1
 			)
 
+		local min_sz = math.floor(
+			(5 + boost) * scale
+		)
+
+		local max_sz = math.floor(
+			(7 + boost) * scale
+		)
+
 		return
 			love.math.random(
-				5 + boost,
-				7 + boost
+				min_sz,
+				max_sz
 			),
 			love.math.random(
-				5 + boost,
-				7 + boost
+				min_sz,
+				max_sz
 			)
 
 	-- ====================================
@@ -261,14 +298,22 @@ local function generate_room_dimensions(room_type, floor)
 				2
 			)
 
+		local min_sz = math.floor(
+			(9 + boost) * scale
+		)
+
+		local max_sz = math.floor(
+			(11 + boost) * scale
+		)
+
 		return
 			love.math.random(
-				9 + boost,
-				11 + boost
+				min_sz,
+				max_sz
 			),
 			love.math.random(
-				9 + boost,
-				11 + boost
+				min_sz,
+				max_sz
 			)
 
 	-- ====================================
@@ -282,14 +327,22 @@ local function generate_room_dimensions(room_type, floor)
 				3
 			)
 
+		local min_sz = math.floor(
+			(7 + boost) * scale
+		)
+
+		local max_sz = math.floor(
+			(14 + boost) * scale
+		)
+
 		return
 			love.math.random(
-				7 + boost,
-				14 + boost
+				min_sz,
+				max_sz
 			),
 			love.math.random(
-				7 + boost,
-				14 + boost
+				min_sz,
+				max_sz
 			)
 	end
 
@@ -303,16 +356,24 @@ local function generate_room_dimensions(room_type, floor)
 			3
 		)
 
+	local min_sz = math.floor(
+		(6 + boost) * scale
+	)
+
+	local max_sz = math.floor(
+		(10 + boost) * scale
+	)
+
 	return
-		love.math.random(6 + boost, 10 + boost),
-		love.math.random(6 + boost, 10 + boost)
+		love.math.random(min_sz, max_sz),
+		love.math.random(min_sz, max_sz)
 end
 
 -- ========================================
 -- Dungeon Generation
 -- ========================================
 
-function M.create(width, height, floor)
+function M.create(width, height, floor, anomaly)
 	floor = floor or 1
 
 	local map = {}
@@ -341,8 +402,22 @@ function M.create(width, height, floor)
 		local rw, rh =
 			generate_room_dimensions(
 				room_type,
-				floor
+				floor,
+				anomaly
 			)
+
+		-- geometry anomaly: duplicate room structure
+		if anomaly
+			and anomaly.type == "geometry"
+			and #rooms > 0
+			and love.math.random() < 0.3
+		then
+			local prev =
+				rooms[#rooms]
+
+			rw, rh = prev.w, prev.h
+			room_type = prev.type
+		end
 
 		local rx =
 			love.math.random(

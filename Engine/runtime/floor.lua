@@ -8,7 +8,8 @@ local M = {}
 function M.next(
 	game,
 	Map,
-	Compositions
+	Compositions,
+	anomaly
 )
 	-- ================================
 	-- Advance Floor
@@ -27,7 +28,8 @@ function M.next(
 			Map.create(
 				80,
 				80,
-				game.floor
+				game.floor,
+				anomaly
 			)
 
 	game.map = map
@@ -48,7 +50,8 @@ function M.next(
 	Environment.populate(
 		game,
 		rooms,
-		Compositions
+		Compositions,
+		anomaly
 	)
 
 	-- ================================

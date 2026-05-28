@@ -13,31 +13,54 @@ local M = {}
 function M.populate(
 	game,
 	rooms,
-	compositions
+	compositions,
+	anomaly
 )
+	local silent =
+		anomaly
+		and (anomaly.type == "silent"
+			or anomaly.type == "dead")
+
+	local dead =
+		anomaly
+		and anomaly.type == "dead"
+
 	-- ====================================
 	-- Enemy Placement
 	-- ====================================
 
-	for i = 2, #rooms do
-		local room = rooms[i]
+	if not silent then
+		for i = 2, #rooms do
+			local room = rooms[i]
 
-		Entities.spawn_enemy(
-			game.enemies,
-			room
-		)
+			Entities.spawn_enemy(
+				game.enemies,
+				room
+			)
+		end
 	end
 
 	-- ====================================
 	-- Environmental Composition
 	-- ====================================
 
+	local is_echo =
+		anomaly
+		and anomaly.type == "echo"
+
 	for i = 2, #rooms do
 		local room = rooms[i]
 
 		local items = nil
 
-		if room.type == "quiet" then
+		-- echo anomaly: override some rooms
+		if is_echo
+			and love.math.random() < 0.35
+		then
+			items =
+				compositions.echo(room)
+
+		elseif room.type == "quiet" then
 			items =
 				compositions.quiet(
 					room,
@@ -76,10 +99,54 @@ function M.populate(
 		end
 
 		if items then
+			-- silent/dead: sparse props
+			if silent and #items > 0 then
+				local keep =
+					dead and 0.1 or 0.3
+
+				local filtered = {}
+
+				for _, item
+					in ipairs(items)
+				do
+					if love.math.random()
+						< keep
+					then
+						table.insert(
+							filtered,
+							item
+						)
+					end
+				end
+
+				items = filtered
+			end
+
 			Props.add_many(
 				game.props,
 				items
 			)
+		end
+	end
+
+	-- ====================================
+	-- Echo Anomaly: Additional Echoes
+	-- ====================================
+
+	if is_echo then
+		for i = 2, #rooms do
+			if love.math.random() < 0.15
+			then
+				local echo =
+					compositions.echo_light(
+						rooms[i]
+					)
+
+				Props.add_many(
+					game.props,
+					echo
+				)
+			end
 		end
 	end
 end

@@ -246,6 +246,99 @@ function M.quiet(room, floor)
 end
 
 -- ========================================
+-- Environmental Echoes
+-- ========================================
+
+function M.echo(room)
+	local props = {}
+
+	local cx = room.center.x
+	local cy = room.center.y
+
+	local pattern =
+		love.math.random(1, 4)
+
+	if pattern == 1 then
+		-- glyph cluster
+		local count =
+			love.math.random(3, 6)
+
+		for _ = 1, count do
+			local px =
+				love.math.random(
+					room.x + 1,
+					room.x + room.w - 2
+				)
+
+			local py =
+				love.math.random(
+					room.y + 1,
+					room.y + room.h - 2
+				)
+
+			add(props, px, py, "glyph")
+		end
+
+	elseif pattern == 2 then
+		-- abandoned ritual
+		add(props, cx, cy, "seal")
+
+		local count =
+			love.math.random(3, 5)
+
+		for i = 1, count do
+			local angle =
+				(math.pi * 2 / count)
+				* (i - 1)
+
+			local px = cx
+				+ math.floor(
+					math.cos(angle)
+					* 3
+				)
+
+			local py = cy
+				+ math.floor(
+					math.sin(angle)
+					* 3
+				)
+
+			add(
+				props,
+				px,
+				py,
+				"glyph"
+			)
+		end
+
+	elseif pattern == 3 then
+		-- lone statue
+		add(props, cx, cy, "statue")
+
+	-- pattern 4: empty chamber (no props)
+	end
+
+	return props
+end
+
+function M.echo_light(room)
+	local props = {}
+
+	local cx = room.center.x
+	local cy = room.center.y
+
+	local t = "glyph"
+
+	if love.math.random() < 0.25 then
+		t = "seal"
+	end
+
+	add(props, cx, cy, t)
+
+	return props
+end
+
+-- ========================================
 -- Hall
 -- ========================================
 
