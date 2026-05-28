@@ -8,6 +8,7 @@ local Entities = require("Engine.runtime.entities")
 local Floor = require("Engine.runtime.floor")
 local Environment = require("Engine.runtime.environment")
 local SceneLoop = require("Engine.runtime.scene_loop")
+local DescentText = require("Engine.runtime.descent_text")
 
 local Compositions = require("world.compositions")
 local movement = require("systems.movement")
@@ -16,7 +17,8 @@ local ai = require("systems.ai")
 local Game = {}
 
 function Game:new()
-	local map, rooms, exit = Map.create(80, 80)
+	local map, rooms, exit =
+		Map.create(80, 80, 1)
 
 	local spawn = rooms[1].center
 
@@ -120,11 +122,20 @@ function Game:player_turn(action)
 		and
 		self.player.y == self.exit.y
 	then
-		Floor.next(
-			self,
-			Map,
-			Compositions
-		)
+		self.scene:set("transition")
+
+		local next_floor =
+			self.floor + 1
+
+		self.transition:start({
+			descent = true,
+			next_floor = next_floor,
+			duration = 1.2,
+			msg =
+				DescentText.get(
+					next_floor
+				),
+		})
 
 		return
 	end
@@ -158,16 +169,32 @@ function Game:update_transition()
 		)
 
 	if finished then
-		self.scene:set("combat")
+		self.transition.duration =
+			0.6
 
-		self.combat =
-			Encounter.start(
-				self.player,
-				self.transition.data.enemy
+		local data =
+			self.transition.data
+
+		if data and data.descent then
+			Floor.next(
+				self,
+				Map,
+				Compositions
 			)
 
-		self.log =
-			"The battle begins!"
+			self.scene:set("explore")
+		else
+			self.scene:set("combat")
+
+			self.combat =
+				Encounter.start(
+					self.player,
+					data.enemy
+				)
+
+			self.log =
+				"The battle begins!"
+		end
 	end
 end
 

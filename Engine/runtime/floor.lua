@@ -26,7 +26,8 @@ function M.next(
 		exit =
 			Map.create(
 				80,
-				80
+				80,
+				game.floor
 			)
 
 	game.map = map

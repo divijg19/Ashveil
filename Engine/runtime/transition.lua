@@ -24,6 +24,10 @@ function M:start(data)
 	self.active = true
 
 	self.data = data or {}
+
+	if self.data.duration then
+		self.duration = self.data.duration
+	end
 end
 
 function M:update(dt)

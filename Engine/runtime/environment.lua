@@ -37,7 +37,14 @@ function M.populate(
 
 		local items = nil
 
-		if room.type == "shrine" then
+		if room.type == "quiet" then
+			items =
+				compositions.quiet(
+					room,
+					game.floor
+				)
+
+		elseif room.type == "shrine" then
 			items =
 				compositions.shrine(
 					room
