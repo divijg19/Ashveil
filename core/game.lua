@@ -9,6 +9,7 @@ local Floor = require("Engine.runtime.floor")
 local Environment = require("Engine.runtime.environment")
 local SceneLoop = require("Engine.runtime.scene_loop")
 local DescentText = require("Engine.runtime.descent_text")
+local Anomaly = require("Engine.runtime.anomaly")
 
 local Compositions = require("world.compositions")
 local movement = require("systems.movement")
@@ -51,6 +52,8 @@ function Game:new()
 		combat = nil,
 
 		transition = Transition:new(0.6),
+
+		anomaly = nil,
 
 		log = "Welcome to Ashveil.",
 
@@ -127,13 +130,20 @@ function Game:player_turn(action)
 		local next_floor =
 			self.floor + 1
 
+		local anomaly =
+			Anomaly.roll(next_floor)
+
+		self.anomaly = anomaly
+
 		self.transition:start({
 			descent = true,
 			next_floor = next_floor,
 			duration = 1.2,
 			msg =
 				DescentText.get(
-					next_floor
+					next_floor,
+					anomaly
+					and anomaly.type
 				),
 		})
 
@@ -179,7 +189,8 @@ function Game:update_transition()
 			Floor.next(
 				self,
 				Map,
-				Compositions
+				Compositions,
+				self.anomaly
 			)
 
 			self.scene:set("explore")
