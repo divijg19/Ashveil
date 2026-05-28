@@ -27,11 +27,14 @@ function M.draw(state)
 	local data = t.data
 
 	if data and data.descent then
+		local ox =
+			data.offset_x or 0
+
 		love.graphics.printf(
 			"~ Floor "
 				.. data.next_floor
 				.. " ~",
-			0,
+			ox,
 			h / 2 - 30,
 			w,
 			"center"
@@ -39,7 +42,7 @@ function M.draw(state)
 
 		love.graphics.printf(
 			data.msg or "",
-			0,
+			ox,
 			h / 2 + 10,
 			w,
 			"center"
@@ -53,6 +56,8 @@ function M.draw(state)
 			"center"
 		)
 	end
+
+	love.graphics.setColor(1, 1, 1, 1)
 end
 
 return M

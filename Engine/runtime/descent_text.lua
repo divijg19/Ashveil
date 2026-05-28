@@ -12,12 +12,32 @@ local TIERS = {
 	},
 
 	{
+		floor = 2,
+		messages = {
+			"The descent begins.",
+			"You are not lost. Yet.",
+			"The Veil stirs.",
+			"Somewhere below, something waits.",
+		},
+	},
+
+	{
 		floor = 3,
 		messages = {
 			"The dark thickens.",
 			"You are expected.",
 			"The walls breathe.",
 			"Stillness settles.",
+		},
+	},
+
+	{
+		floor = 4,
+		messages = {
+			"The air grows heavy.",
+			"The Veil observes.",
+			"These halls remember.",
+			"You descend unnoticed.",
 		},
 	},
 
@@ -32,6 +52,16 @@ local TIERS = {
 	},
 
 	{
+		floor = 6,
+		messages = {
+			"The corridors shift.",
+			"You have been here before.",
+			"Something follows.",
+			"The silence follows.",
+		},
+	},
+
+	{
 		floor = 7,
 		messages = {
 			"Depth has weight.",
@@ -42,12 +72,42 @@ local TIERS = {
 	},
 
 	{
+		floor = 8,
+		messages = {
+			"The halls repeat themselves.",
+			"You are being remembered.",
+			"The geometry breathes.",
+			"Old echoes return.",
+		},
+	},
+
+	{
+		floor = 9,
+		messages = {
+			"Recurring. Returning. Repeating.",
+			"The Veil does not forget.",
+			"You have walked these halls before.",
+			"The descent is recursive.",
+		},
+	},
+
+	{
 		floor = 10,
 		messages = {
 			"You are far now.",
 			"The Veil is all.",
 			"Nothing follows.",
 			"The dark is warm.",
+		},
+	},
+
+	{
+		floor = 12,
+		messages = {
+			"The Veil forgets itself.",
+			"Depth dissolves.",
+			"You are becoming part of it.",
+			"There is no surface.",
 		},
 	},
 }

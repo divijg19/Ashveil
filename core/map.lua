@@ -1,5 +1,6 @@
 local Archetypes = require("world.archetypes")
 local Dungeon = require("Engine.world.dungeon")
+local EchoMemory = require("Engine.runtime.echo_memory")
 local M = {}
 
 local WALL = "#"
@@ -373,7 +374,13 @@ end
 -- Dungeon Generation
 -- ========================================
 
-function M.create(width, height, floor, anomaly)
+function M.create(
+	width,
+	height,
+	floor,
+	anomaly,
+	echo_memories
+)
 	floor = floor or 1
 
 	local map = {}
@@ -393,30 +400,49 @@ function M.create(width, height, floor, anomaly)
 	local ROOM_COUNT = 14
 
 	for _ = 1, ROOM_COUNT do
-		local room_type =
-			random_room_type(
-				previous_type,
-				floor
-			)
+		local room_type
+		local rw, rh
 
-		local rw, rh =
-			generate_room_dimensions(
-				room_type,
+		-- echo memory recall
+		local recalled =
+			EchoMemory.recall(
 				floor,
-				anomaly
+				echo_memories
 			)
 
-		-- geometry anomaly: duplicate room structure
-		if anomaly
-			and anomaly.type == "geometry"
-			and #rooms > 0
-			and love.math.random() < 0.3
-		then
-			local prev =
-				rooms[#rooms]
+		if recalled then
+			room_type = recalled.type
+			rw = recalled.w
+			rh = recalled.h
 
-			rw, rh = prev.w, prev.h
-			room_type = prev.type
+		else
+			room_type =
+				random_room_type(
+					previous_type,
+					floor
+				)
+
+			rw, rh =
+				generate_room_dimensions(
+					room_type,
+					floor,
+					anomaly
+				)
+
+			-- geometry anomaly: duplicate
+			if anomaly
+				and anomaly.type
+					== "geometry"
+				and #rooms > 0
+				and love.math.random()
+					< 0.3
+			then
+				local prev =
+					rooms[#rooms]
+
+				rw, rh = prev.w, prev.h
+				room_type = prev.type
+			end
 		end
 
 		local rx =
@@ -470,6 +496,11 @@ function M.create(width, height, floor, anomaly)
 			room.landmark =
 				love.math.random()
 				< landmark_chance
+
+			EchoMemory.remember(
+				room,
+				echo_memories
+			)
 
 			table.insert(rooms, room)
 			previous_type = room_type
