@@ -1,6 +1,7 @@
 package.path = "./?.lua;./?/init.lua;" .. package.path
 
 local Game = require("core.game")
+local MessagePanel = require("Engine.runtime.message_panel")
 
 local love_input = require("input.love")
 local explore_input = require("input.explore")
@@ -11,8 +12,29 @@ local renderer = require("render.love")
 local game = Game:new()
 
 function love.update(dt)
-	local key = love_input.get_key()
+	MessagePanel.update(dt)
 
+	-- transitions update continuously (no player input)
+	if game.scene:is("transition") then
+		game:update(nil)
+		return
+	end
+
+	-- message panel blocks gameplay input
+	if MessagePanel.has_active() then
+		local key = love_input.get_key()
+
+		if key == "return"
+			or key == "space"
+			or love_input.was_clicked()
+		then
+			MessagePanel.acknowledge()
+		end
+
+		return
+	end
+
+	local key = love_input.get_key()
 	local action = nil
 
 	if game.scene:is("explore") then
@@ -22,13 +44,6 @@ function love.update(dt)
 		action = combat_input.get_action(key)
 	end
 
-	-- transitions update continuously
-	if game.scene:is("transition") then
-		game:update(nil)
-		return
-	end
-
-	-- gameplay updates remain turn-based
 	if action then
 		game:update(action)
 	end

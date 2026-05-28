@@ -10,6 +10,8 @@ local Environment = require("Engine.runtime.environment")
 local SceneLoop = require("Engine.runtime.scene_loop")
 local DescentText = require("Engine.runtime.descent_text")
 local Anomaly = require("Engine.runtime.anomaly")
+local EchoMemory = require("Engine.runtime.echo_memory")
+local MessagePanel = require("Engine.runtime.message_panel")
 
 local Compositions = require("world.compositions")
 local movement = require("systems.movement")
@@ -18,8 +20,10 @@ local ai = require("systems.ai")
 local Game = {}
 
 function Game:new()
+	local echo_memories = {}
+
 	local map, rooms, exit =
-		Map.create(80, 80, 1)
+		Map.create(80, 80, 1, nil, echo_memories)
 
 	local spawn = rooms[1].center
 
@@ -27,6 +31,8 @@ function Game:new()
 		map = map,
 		rooms = rooms,
 		exit = exit,
+
+		echo_memories = echo_memories,
 
 		floor = 1,
 
@@ -55,7 +61,9 @@ function Game:new()
 
 		anomaly = nil,
 
-		log = "Welcome to Ashveil.",
+		_prev_log = nil,
+
+		log = "",
 
 		is_game_over = false,
 	}
@@ -68,6 +76,10 @@ function Game:new()
 
 	setmetatable(obj, self)
 	self.__index = self
+
+	MessagePanel.push(
+		"Welcome to Ashveil."
+	)
 
 	return obj
 end
@@ -135,16 +147,51 @@ function Game:player_turn(action)
 
 		self.anomaly = anomaly
 
+		local msg =
+			DescentText.get(
+				next_floor,
+				anomaly
+				and anomaly.type
+			)
+
+		-- very rarely repeat previous message
+		if self._prev_msg
+			and love.math.random()
+				< 0.05
+		then
+			msg = self._prev_msg
+		end
+
+		self._prev_msg = msg
+
+		-- subtle timing instability
+		local duration = 1.2
+
+		local roll =
+			love.math.random()
+
+		if roll < 0.06 then
+			duration = 1.4
+		elseif roll < 0.10 then
+			duration = 1.0
+		end
+
+		-- very rare text offset
+		local offset_x = 0
+
+		if love.math.random() < 0.08 then
+			offset_x =
+				love.math.random(
+					-2, 2
+				)
+		end
+
 		self.transition:start({
 			descent = true,
 			next_floor = next_floor,
-			duration = 1.2,
-			msg =
-				DescentText.get(
-					next_floor,
-					anomaly
-					and anomaly.type
-				),
+			duration = duration,
+			msg = msg,
+			offset_x = offset_x,
 		})
 
 		return
@@ -191,6 +238,10 @@ function Game:update_transition()
 				Map,
 				Compositions,
 				self.anomaly
+			)
+
+			MessagePanel.push(
+				data.msg
 			)
 
 			self.scene:set("explore")
@@ -290,6 +341,10 @@ function Game:get_draw_data()
 		combat = self.combat,
 
 		transition = self.transition,
+
+		anomaly = self.anomaly,
+
+		message_panel = MessagePanel,
 
 		log = self.log,
 

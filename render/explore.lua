@@ -64,6 +64,9 @@ end
 -- ========================================
 
 function M.draw(state)
+	-- ensure full color for world
+	love.graphics.setColor(1, 1, 1, 1)
+
 	-- update camera
 	state.camera:center_on(
 		state.player.x,
@@ -275,28 +278,110 @@ function M.draw(state)
 		end
 	end
 
-	-- UI
-	love.graphics.print(
-		" Floor: " .. state.floor ..
-		"  | HP: " .. state.player.hp ..
-		"  | Enemies: " .. #(state.enemies or {}),
+	-- ========================================
+	-- HUD
+	-- ========================================
+
+	M.draw_hud(state)
+end
+
+local function get_hud_alpha(state)
+	local anomaly = state.anomaly
+
+	if not anomaly then
+		return 0.85
+	end
+
+	if anomaly.type == "silent"
+		or anomaly.type == "dead"
+	then
+		return 0.7
+	end
+
+	return 0.85
+end
+
+function M.draw_hud(state)
+	local w = love.graphics.getWidth()
+	local h = love.graphics.getHeight()
+
+	local alpha =
+		get_hud_alpha(state)
+
+	-- panel background (subtle)
+	love.graphics.setColor(
+		0,
+		0,
+		0,
+		0.5
+	)
+
+	love.graphics.rectangle(
+		"fill",
 		10,
-		10
+		10,
+		130,
+		40
+	)
+
+	-- subtle edge separation
+	love.graphics.setColor(
+		0.35,
+		0.35,
+		0.35,
+		0.25
+	)
+
+	love.graphics.rectangle(
+		"line",
+		10,
+		10,
+		130,
+		40
+	)
+
+	-- floor label
+	love.graphics.setColor(
+		0.85,
+		0.85,
+		0.85,
+		alpha
 	)
 
 	love.graphics.print(
-		state.log or "",
-		10,
-		30
+		"Floor " .. state.floor,
+		18,
+		14
 	)
 
+	-- vitality label
+	love.graphics.print(
+		"Vitality "
+			.. state.player.hp,
+		18,
+		28
+	)
+
+	-- game over
 	if state.is_game_over then
-		love.graphics.print(
-			"YOU DIED IN THE VEIL",
-			10,
-			60
+		love.graphics.setColor(
+			0.75,
+			0.75,
+			0.75,
+			0.85
+		)
+
+		love.graphics.printf(
+			"You died in the Veil",
+			0,
+			h / 2 - 20,
+			w,
+			"center"
 		)
 	end
+
+	-- restore full color for subsequent frames
+	love.graphics.setColor(1, 1, 1, 1)
 end
 
 return M

@@ -29,7 +29,8 @@ function M.next(
 				80,
 				80,
 				game.floor,
-				anomaly
+				anomaly,
+				game.echo_memories
 			)
 
 	game.map = map
@@ -71,8 +72,7 @@ function M.next(
 	-- Descent Messaging
 	-- ================================
 
-	game.log =
-		"You descend deeper..."
+	game.log = ""
 end
 
 return M
