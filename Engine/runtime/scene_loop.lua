@@ -9,6 +9,9 @@ function M.update(game, action)
 
 	elseif game.scene:is("combat") then
 		game:update_combat(action)
+
+	elseif game.scene:is("event") then
+		game:update_event(action)
 	end
 end
 

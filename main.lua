@@ -6,6 +6,7 @@ local MessagePanel = require("Engine.runtime.message_panel")
 local love_input = require("input.love")
 local explore_input = require("input.explore")
 local combat_input = require("input.combat")
+local event_input = require("input.event")
 
 local renderer = require("render.love")
 
@@ -39,6 +40,9 @@ function love.update(dt)
 
 	if game.scene:is("explore") then
 		action = explore_input.get_action(key)
+
+	elseif game.scene:is("event") then
+		action = event_input.get_action(key)
 
 	elseif game.scene:is("combat") then
 		action = combat_input.get_action(key)

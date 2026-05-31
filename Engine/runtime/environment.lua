@@ -41,6 +41,22 @@ function M.populate(
 	end
 
 	-- ====================================
+	-- Room Interaction Assignment
+	-- ====================================
+
+	for i = 2, #rooms do
+		local room = rooms[i]
+
+		if room.type == "shrine"
+			or room.type == "crypt"
+			or room.type == "arena"
+			or room.type == "ruin"
+		then
+			room.interaction = room.type
+		end
+	end
+
+	-- ====================================
 	-- Environmental Composition
 	-- ====================================
 
