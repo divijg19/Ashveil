@@ -12,6 +12,8 @@ local DescentText = require("Engine.runtime.descent_text")
 local Anomaly = require("Engine.runtime.anomaly")
 local EchoMemory = require("Engine.runtime.echo_memory")
 local MessagePanel = require("Engine.runtime.message_panel")
+local Events = require("Engine.runtime.events")
+local Interaction = require("Engine.runtime.interactions")
 
 local Compositions = require("world.compositions")
 local movement = require("systems.movement")
@@ -60,6 +62,8 @@ function Game:new()
 		transition = Transition:new(0.6),
 
 		anomaly = nil,
+
+		event = nil,
 
 		_prev_log = nil,
 
@@ -119,6 +123,16 @@ function Game:player_turn(action)
 	local nx, ny = movement.player(self, action)
 
 	if not nx then
+		return
+	end
+
+	-- check room interactions before enemies
+	local room = self:get_room_at(nx, ny)
+
+	if room and Interaction.available(room) then
+		self.player.x = nx
+		self.player.y = ny
+		self:start_event(room)
 		return
 	end
 
@@ -321,6 +335,96 @@ function Game:get_enemy_at(x, y)
 	)
 end
 
+function Game:get_room_at(x, y)
+	for _, room in ipairs(self.rooms) do
+		if x >= room.x
+			and x < room.x + room.w
+			and y >= room.y
+			and y < room.y + room.h
+		then
+			return room
+		end
+	end
+
+	return nil
+end
+
+-- =========================
+-- EVENT
+-- =========================
+
+function Game:start_event(room)
+	self.event = Events.start(
+		room.interaction,
+		room
+	)
+
+	self.scene:set("event")
+end
+
+function Game:update_event(action)
+	local ev = self.event
+
+	if not ev then
+		self.scene:set("explore")
+		return
+	end
+
+	if ev.done then
+		local room = self:get_room_at(
+			self.player.x,
+			self.player.y
+		)
+
+		if room then
+			room.visited = true
+		end
+
+		local result = ev.result
+
+		self.event = nil
+		self.scene:set("explore")
+
+		if result and result.combat then
+			local enemy = self:get_enemy_at(
+				self.player.x,
+				self.player.y
+			)
+
+			if enemy then
+				self:start_combat(enemy)
+				return
+			end
+		end
+
+		if result and result.message then
+			MessagePanel.push(result.message)
+		end
+
+		return
+	end
+
+	if not action then
+		return
+	end
+
+	if action == "up" then
+		ev.selection = math.max(
+			1,
+			ev.selection - 1
+		)
+
+	elseif action == "down" then
+		ev.selection = math.min(
+			#ev.options,
+			ev.selection + 1
+		)
+
+	elseif action == "confirm" then
+		Events.resolve(self, ev, ev.selection)
+	end
+end
+
 -- =========================
 -- DRAW STATE
 -- =========================
@@ -341,6 +445,8 @@ function Game:get_draw_data()
 		combat = self.combat,
 
 		transition = self.transition,
+
+		event = self.event,
 
 		anomaly = self.anomaly,
 

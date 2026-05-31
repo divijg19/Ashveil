@@ -1,6 +1,7 @@
 local explore = require("render.explore")
 local combat = require("render.combat")
 local transition = require("render.transition")
+local event_view = require("render.event")
 
 local M = {}
 
@@ -10,6 +11,10 @@ function M.draw(state)
 
 	elseif state.scene:is("combat") then
 		combat.draw(state)
+
+	elseif state.scene:is("event") then
+		explore.draw(state)
+		event_view.draw(state)
 
 	elseif state.scene:is("transition") then
 		explore.draw(state)
