@@ -73,6 +73,7 @@ function M.next(
 	-- ================================
 
 	game.log = ""
+	game.player.buff_doubled = nil
 end
 
 return M

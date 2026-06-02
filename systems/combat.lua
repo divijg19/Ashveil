@@ -11,7 +11,7 @@ end
 
 function M.enemy_vs_player(game, nx, ny)
 	if nx == game.player.x and ny == game.player.y then
-		game.player.hp = game.player.hp - 1
+		game.player.stats.vitality = game.player.stats.vitality - 1
 		return true
 	end
 	return false

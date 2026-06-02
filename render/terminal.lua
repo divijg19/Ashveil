@@ -33,7 +33,7 @@ function M.draw(state)
 		end
 	end
 
-	print("HP:", state.player.hp, " | Enemies:", #(state.enemies or {}))
+	print("Vitality:", state.player.stats.vitality, " | Enemies:", #(state.enemies or {}))
 	print(state.log or "")
 end
 

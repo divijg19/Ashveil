@@ -10,10 +10,10 @@ local Environment = require("Engine.runtime.environment")
 local SceneLoop = require("Engine.runtime.scene_loop")
 local DescentText = require("Engine.runtime.descent_text")
 local Anomaly = require("Engine.runtime.anomaly")
-local EchoMemory = require("Engine.runtime.echo_memory")
 local MessagePanel = require("Engine.runtime.message_panel")
 local Events = require("Engine.runtime.events")
-local Interaction = require("Engine.runtime.interactions")
+local POI = require("Engine.runtime.poi")
+local Inspection = require("Engine.runtime.inspection")
 
 local Compositions = require("world.compositions")
 local movement = require("systems.movement")
@@ -46,7 +46,14 @@ function Game:new()
 		player = {
 			x = spawn.x,
 			y = spawn.y,
-			hp = 10,
+			stats = {
+				vitality = 10,
+				strength = 1,
+				resolve = 1,
+				perception = 1,
+				agility = 1,
+			},
+			blessings = {},
 		},
 
 		enemies = {},
@@ -64,6 +71,10 @@ function Game:new()
 		anomaly = nil,
 
 		event = nil,
+
+		nearby_poi = nil,
+
+		active_poi = nil,
 
 		_prev_log = nil,
 
@@ -100,7 +111,7 @@ function Game:update(action)
 		action
 	)
 
-	if self.player.hp <= 0 then
+	if self.player.stats.vitality <= 0 then
 		self.is_game_over = true
 		self.log = "You died in the Veil."
 	end
@@ -111,8 +122,19 @@ end
 -- =========================
 
 function Game:update_explore(action)
+	if action == "interact" then
+		self:player_interact()
+		return
+	end
+
+	if action == "inspect" then
+		self:player_inspect()
+		return
+	end
+
 	self:player_turn(action)
 	self:world_turn()
+	self.nearby_poi = POI.near(self)
 end
 
 function Game:player_turn(action)
@@ -123,16 +145,6 @@ function Game:player_turn(action)
 	local nx, ny = movement.player(self, action)
 
 	if not nx then
-		return
-	end
-
-	-- check room interactions before enemies
-	local room = self:get_room_at(nx, ny)
-
-	if room and Interaction.available(room) then
-		self.player.x = nx
-		self.player.y = ny
-		self:start_event(room)
 		return
 	end
 
@@ -294,7 +306,7 @@ function Game:update_combat(action)
 		c.player_hp = c.player_hp - 1
 
 		if c.player_hp <= 0 then
-			self.player.hp = 0
+			self.player.stats.vitality = 0
 			self.is_game_over = true
 			self.log = "You were slain."
 			return
@@ -319,7 +331,6 @@ function Game:exit_combat(player_won)
 	)
 
 	self.combat = nil
-
 	self.scene:set("explore")
 end
 
@@ -335,30 +346,37 @@ function Game:get_enemy_at(x, y)
 	)
 end
 
-function Game:get_room_at(x, y)
-	for _, room in ipairs(self.rooms) do
-		if x >= room.x
-			and x < room.x + room.w
-			and y >= room.y
-			and y < room.y + room.h
-		then
-			return room
-		end
-	end
-
-	return nil
-end
-
 -- =========================
 -- EVENT
 -- =========================
 
-function Game:start_event(room)
-	self.event = Events.start(
-		room.interaction,
-		room
-	)
+function Game:player_interact()
+	local poi = POI.near(self)
+	if not poi then
+		return
+	end
 
+	local event_type = POI.activate(poi)
+	if not event_type then
+		return
+	end
+
+	self.active_poi = poi
+	self.event = Events.start(event_type, poi)
+	self.scene:set("event")
+end
+
+function Game:player_inspect()
+	local poi = POI.near(self)
+	if not poi then
+		return
+	end
+
+	Inspection.inspect(self, poi)
+end
+
+function Game:start_event(event_type, poi)
+	self.event = Events.start(event_type, poi)
 	self.scene:set("event")
 end
 
@@ -371,16 +389,12 @@ function Game:update_event(action)
 	end
 
 	if ev.done then
-		local room = self:get_room_at(
-			self.player.x,
-			self.player.y
-		)
-
-		if room then
-			room.visited = true
-		end
-
 		local result = ev.result
+
+		if self.active_poi then
+			POI.complete(self.active_poi)
+			self.active_poi = nil
+		end
 
 		self.event = nil
 		self.scene:set("explore")
@@ -447,6 +461,10 @@ function Game:get_draw_data()
 		transition = self.transition,
 
 		event = self.event,
+
+		nearby_poi = self.nearby_poi,
+
+		active_poi = self.active_poi,
 
 		anomaly = self.anomaly,
 
