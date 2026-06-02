@@ -225,6 +225,58 @@ function M.draw(state)
 
 				4
 			)
+
+		elseif item.prop.type == "blood_seal" then
+			love.graphics.circle(
+				"line",
+
+				sx,
+				sy,
+
+				12
+			)
+
+			love.graphics.circle(
+				"line",
+
+				sx,
+				sy,
+
+				6
+			)
+
+		elseif item.prop.type == "reliquary" then
+			love.graphics.rectangle(
+				"fill",
+
+				sx - 10,
+				sy - 14,
+
+				20,
+				20
+			)
+
+		elseif item.prop.type == "hidden_passage" then
+			love.graphics.rectangle(
+				"fill",
+
+				sx - 8,
+				sy - 8,
+
+				20,
+				20
+			)
+
+		elseif item.prop.type == "side_door" then
+			love.graphics.rectangle(
+				"line",
+
+				sx - 6,
+				sy - 14,
+
+				12,
+				24
+			)
 		end
 
 		elseif item.type == "exit" then
@@ -279,10 +331,50 @@ function M.draw(state)
 	end
 
 	-- ========================================
+	-- POI Prompt
+	-- ========================================
+
+	M.draw_poi_prompt(state)
+
+	-- ========================================
 	-- HUD
 	-- ========================================
 
 	M.draw_hud(state)
+end
+
+function M.draw_poi_prompt(state)
+	local poi = state.nearby_poi
+	if not poi or not poi.poi then
+		return
+	end
+
+	local w = love.graphics.getWidth()
+	local h = love.graphics.getHeight()
+
+	local action = poi.poi.interaction.action
+
+	love.graphics.setColor(0.85, 0.85, 0.85, 0.85)
+	love.graphics.printf(
+		"[E] " .. action,
+		0,
+		h - 165,
+		w,
+		"center"
+	)
+
+	if poi.poi.inspect then
+		love.graphics.setColor(0.65, 0.65, 0.65, 0.7)
+		love.graphics.printf(
+			"[F] Inspect",
+			0,
+			h - 145,
+			w,
+			"center"
+		)
+	end
+
+	love.graphics.setColor(1, 1, 1, 1)
 end
 
 local function get_hud_alpha(state)
@@ -357,7 +449,7 @@ function M.draw_hud(state)
 	-- vitality label
 	love.graphics.print(
 		"Vitality "
-			.. state.player.hp,
+			.. state.player.stats.vitality,
 		18,
 		28
 	)

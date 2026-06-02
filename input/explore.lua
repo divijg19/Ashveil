@@ -10,7 +10,10 @@ function M.get_action(key)
 		up = "up",
 		down = "down",
 		left = "left",
-		right = "right"
+		right = "right",
+
+		e = "interact",
+		f = "inspect",
 	}
 
 	return map[key]

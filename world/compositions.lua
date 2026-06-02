@@ -342,7 +342,9 @@ end
 -- Hall
 -- ========================================
 
-function M.hall(room)
+function M.hall(room, floor)
+	floor = floor or 1
+
 	local props = {}
 
 	local horizontal =
@@ -372,6 +374,20 @@ function M.hall(room)
 				"brazier"
 			)
 		end
+	end
+
+	if floor >= 5
+		and love.math.random() < 0.15
+	then
+		local edge_x = horizontal
+			and room.x + room.w - 2
+			or room.center.x
+
+		local edge_y = horizontal
+			and room.center.y
+			or room.y + room.h - 2
+
+		add(props, edge_x, edge_y, "side_door")
 	end
 
 	return props

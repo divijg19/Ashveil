@@ -12,11 +12,11 @@ function M.update(game, ai)
 
 		else
 			local before_hp =
-				game.player.hp
+				game.player.stats.vitality
 
 			ai.enemy_turn(game, e)
 
-			if game.player.hp
+			if game.player.stats.vitality
 				< before_hp
 			then
 				game.log =

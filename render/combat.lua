@@ -27,7 +27,7 @@ function M.draw(state)
 	)
 
 	love.graphics.print(
-		"HP: " .. combat.player_hp,
+		"Vitality: " .. combat.player_hp,
 		60,
 		130
 	)

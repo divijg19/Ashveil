@@ -4,7 +4,7 @@ function M.start(player, enemy)
 	return {
 		enemy = enemy,
 
-		player_hp = player.hp,
+		player_hp = player.stats.vitality,
 		enemy_hp = enemy.hp,
 	}
 end
@@ -14,7 +14,7 @@ function M.finish(encounter, player, won)
 		encounter.enemy.hp = 0
 	end
 
-	player.hp =
+	player.stats.vitality =
 		encounter.player_hp
 end
 
