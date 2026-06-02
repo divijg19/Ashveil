@@ -3,7 +3,7 @@ local M = {}
 function M.player_vs_enemy(game, nx, ny)
 	local enemy = game:get_enemy_at(nx, ny)
 	if enemy then
-		enemy.hp = enemy.hp - 1
+		enemy.hp = enemy.hp - game.player.stats.strength
 		return true
 	end
 	return false
