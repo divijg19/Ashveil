@@ -54,6 +54,7 @@ function Game:new()
 				agility = 1,
 			},
 			blessings = {},
+			trial_mod = nil,
 		},
 
 		enemies = {},
@@ -277,8 +278,16 @@ function Game:update_transition()
 			self.combat =
 				Encounter.start(
 					self.player,
-					data.enemy
+					data.enemy,
+					self.player.trial_mod
 				)
+
+			local enemy_speed = 2
+			self.combat.player_initiative =
+				love.math.random(
+					1,
+					self.player.stats.agility + enemy_speed
+				) <= self.player.stats.agility
 
 			self.log =
 				"The battle begins!"
@@ -294,22 +303,40 @@ function Game:update_combat(action)
 	local c = self.combat
 
 	if action == "attack" then
-		c.enemy_hp = c.enemy_hp - 1
+		if c.player_initiative then
+			c.enemy_hp = c.enemy_hp - self.player.stats.strength
+			self.log = "You strike the Veilbeast."
 
-		self.log = "You strike the Veilbeast."
+			if c.enemy_hp <= 0 then
+				self:exit_combat(true)
+				return
+			end
 
-		if c.enemy_hp <= 0 then
-			self:exit_combat(true)
-			return
-		end
+			c.player_hp = c.player_hp - 1
 
-		c.player_hp = c.player_hp - 1
+			if c.player_hp <= 0 then
+				self.player.stats.vitality = 0
+				self.is_game_over = true
+				self.log = "You were slain."
+				return
+			end
+		else
+			c.player_hp = c.player_hp - 1
 
-		if c.player_hp <= 0 then
-			self.player.stats.vitality = 0
-			self.is_game_over = true
-			self.log = "You were slain."
-			return
+			if c.player_hp <= 0 then
+				self.player.stats.vitality = 0
+				self.is_game_over = true
+				self.log = "You were slain."
+				return
+			end
+
+			c.enemy_hp = c.enemy_hp - self.player.stats.strength
+			self.log = "You strike the Veilbeast."
+
+			if c.enemy_hp <= 0 then
+				self:exit_combat(true)
+				return
+			end
 		end
 	elseif action == "guard" then
 		self.log = "You brace for impact."
@@ -332,6 +359,38 @@ function Game:exit_combat(player_won)
 
 	self.combat = nil
 	self.scene:set("explore")
+
+	if not player_won then
+		self.player.trial_mod = nil
+		return
+	end
+
+	if self.player.trial_mod then
+		local mod = self.player.trial_mod
+		self.player.trial_mod = nil
+
+		if mod == "wounds" then
+			self.player.stats.strength =
+				self.player.stats.strength + 1
+			MessagePanel.push(
+				"You endure the wound. Strength grows."
+			)
+
+		elseif mod == "fury" then
+			self.player.stats.resolve =
+				self.player.stats.resolve + 1
+			MessagePanel.push(
+				"You overcome fury. Resolve deepens."
+			)
+
+		elseif mod == "shadows" then
+			self.player.stats.perception =
+				self.player.stats.perception + 1
+			MessagePanel.push(
+				"You navigate the darkness. Perception sharpens."
+			)
+		end
+	end
 end
 
 -- =========================

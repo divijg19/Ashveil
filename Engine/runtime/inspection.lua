@@ -13,7 +13,18 @@ function M.inspect(game, poi)
 		return
 	end
 
-	if game.player.stats.perception >= 3 then
+	if game.player.stats.perception >= 5 then
+		local rare = {
+			"A faint whisper emanates from the object.",
+			"The Veil thins around this place.",
+			"You sense a deeper purpose here.",
+		}
+
+		text = text
+			.. " "
+			.. rare[love.math.random(#rare)]
+
+	elseif game.player.stats.perception >= 3 then
 		local extras = {
 			"The details seem clearer up close.",
 			"Subtle imperfections catch your eye.",

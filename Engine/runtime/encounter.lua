@@ -1,12 +1,20 @@
 local M = {}
 
-function M.start(player, enemy)
-	return {
+function M.start(player, enemy, modifier)
+	local encounter = {
 		enemy = enemy,
-
 		player_hp = player.stats.vitality,
 		enemy_hp = enemy.hp,
+		modifier = modifier,
 	}
+
+	if modifier == "wounds" then
+		encounter.player_hp = math.ceil(encounter.player_hp / 2)
+	elseif modifier == "fury" then
+		encounter.enemy_hp = encounter.enemy_hp + 2
+	end
+
+	return encounter
 end
 
 function M.finish(encounter, player, won)

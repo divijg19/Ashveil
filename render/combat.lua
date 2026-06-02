@@ -11,6 +11,15 @@ function M.draw(state)
 		30
 	)
 
+	if combat.modifier then
+		local names = {
+			wounds = "Trial of Wounds",
+			fury = "Trial of Fury",
+			shadows = "Trial of Shadows",
+		}
+		love.graphics.print(names[combat.modifier], 40, 55)
+	end
+
 	-- player panel
 	love.graphics.rectangle(
 		"line",
@@ -32,6 +41,12 @@ function M.draw(state)
 		130
 	)
 
+	love.graphics.print(
+		"Strength: " .. state.player.stats.strength,
+		60,
+		145
+	)
+
 	-- enemy panel
 	love.graphics.rectangle(
 		"line",
@@ -47,11 +62,19 @@ function M.draw(state)
 		100
 	)
 
-	love.graphics.print(
-		"HP: " .. combat.enemy_hp,
-		360,
-		130
-	)
+	if combat.modifier == "shadows" then
+		love.graphics.print(
+			"HP: ???",
+			360,
+			130
+		)
+	else
+		love.graphics.print(
+			"HP: " .. combat.enemy_hp,
+			360,
+			130
+		)
+	end
 
 	-- command box
 	love.graphics.rectangle(

@@ -110,6 +110,7 @@ local EVENT_DEFS = {
 			end
 
 			local roll = love.math.random()
+			local resolve_mod = (game.player.stats.resolve - 1) * 0.05
 
 			if roll < 0.30 then
 				local stats = {"strength", "resolve", "perception"}
@@ -118,7 +119,7 @@ local EVENT_DEFS = {
 				return {message = "You find remnants of power within. +1 "
 					.. stat:gsub("^%l", string.upper) .. "."}
 
-			elseif roll < 0.60 then
+			elseif roll < 0.60 - resolve_mod then
 				return {message = "Something stirs within...", combat = true}
 
 			elseif roll < 0.85 then
@@ -147,7 +148,7 @@ local EVENT_DEFS = {
 		message = "The blood seal offers a greater challenge.",
 		options = {
 			"Trial of Wounds",
-			"Trial of Darkness",
+			"Trial of Shadows",
 			"Trial of Fury",
 			"Leave",
 		},
@@ -159,16 +160,17 @@ local EVENT_DEFS = {
 			if choice == 1 then
 				game.player.stats.vitality =
 					math.max(1, game.player.stats.vitality - 3)
-				event.poi.poi.trial_mod = "wounds"
+				game.player.trial_mod = "wounds"
+				return {message = "The seal demands blood.", combat = true}
 
 			elseif choice == 2 then
-				event.poi.poi.trial_mod = "darkness"
+				game.player.trial_mod = "shadows"
+				return {message = "The darkness watches.", combat = true}
 
 			elseif choice == 3 then
-				event.poi.poi.trial_mod = "fury"
+				game.player.trial_mod = "fury"
+				return {message = "The Veil remembers the weak.", combat = true}
 			end
-
-			return {message = "The trial begins...", combat = true}
 		end,
 	},
 
