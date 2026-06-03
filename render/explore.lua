@@ -330,139 +330,11 @@ function M.draw(state)
 		end
 	end
 
-	-- ========================================
-	-- POI Prompt
-	-- ========================================
-
-	M.draw_poi_prompt(state)
-
-	-- ========================================
-	-- HUD
-	-- ========================================
-
-	M.draw_hud(state)
-end
-
-function M.draw_poi_prompt(state)
-	local poi = state.nearby_poi
-	if not poi or not poi.poi then
-		return
-	end
-
-	local w = love.graphics.getWidth()
-	local h = love.graphics.getHeight()
-
-	local action = poi.poi.interaction.action
-
-	love.graphics.setColor(0.85, 0.85, 0.85, 0.85)
-	love.graphics.printf(
-		"[E] " .. action,
-		0,
-		h - 165,
-		w,
-		"center"
-	)
-
-	if poi.poi.inspect then
-		love.graphics.setColor(0.65, 0.65, 0.65, 0.7)
-		love.graphics.printf(
-			"[F] Inspect",
-			0,
-			h - 145,
-			w,
-			"center"
-		)
-	end
-
-	love.graphics.setColor(1, 1, 1, 1)
-end
-
-local function get_hud_alpha(state)
-	local anomaly = state.anomaly
-
-	if not anomaly then
-		return 0.85
-	end
-
-	if anomaly.type == "silent"
-		or anomaly.type == "dead"
-	then
-		return 0.7
-	end
-
-	return 0.85
-end
-
-function M.draw_hud(state)
-	local w = love.graphics.getWidth()
-	local h = love.graphics.getHeight()
-
-	local alpha =
-		get_hud_alpha(state)
-
-	-- panel background (subtle)
-	love.graphics.setColor(
-		0,
-		0,
-		0,
-		0.5
-	)
-
-	love.graphics.rectangle(
-		"fill",
-		10,
-		10,
-		130,
-		40
-	)
-
-	-- subtle edge separation
-	love.graphics.setColor(
-		0.35,
-		0.35,
-		0.35,
-		0.25
-	)
-
-	love.graphics.rectangle(
-		"line",
-		10,
-		10,
-		130,
-		40
-	)
-
-	-- floor label
-	love.graphics.setColor(
-		0.85,
-		0.85,
-		0.85,
-		alpha
-	)
-
-	love.graphics.print(
-		"Floor " .. state.floor,
-		18,
-		14
-	)
-
-	-- vitality label
-	love.graphics.print(
-		"Vitality "
-			.. state.player.stats.vitality,
-		18,
-		28
-	)
-
-	-- game over
+	-- game over overlay
 	if state.is_game_over then
-		love.graphics.setColor(
-			0.75,
-			0.75,
-			0.75,
-			0.85
-		)
-
+		local w = love.graphics.getWidth()
+		local h = love.graphics.getHeight()
+		love.graphics.setColor(0.75, 0.75, 0.75, 0.85)
 		love.graphics.printf(
 			"You died in the Veil",
 			0,
@@ -472,7 +344,6 @@ function M.draw_hud(state)
 		)
 	end
 
-	-- restore full color for subsequent frames
 	love.graphics.setColor(1, 1, 1, 1)
 end
 

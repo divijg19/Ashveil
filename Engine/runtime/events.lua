@@ -4,6 +4,7 @@ local SYMBOLS = {"△", "□", "○", "◇"}
 
 local EVENT_DEFS = {
 	shrine_altar = {
+		cancel_index = 4,
 		message = "The altar radiates warmth.",
 		options = {
 			"Blessing of Ash (+1 Resolve)",
@@ -30,6 +31,7 @@ local EVENT_DEFS = {
 	},
 
 	shrine_seal = {
+		cancel_index = 2,
 		message = "The seal bears ancient markings.",
 		options = {"Investigate", "Leave"},
 		resolve = function(game, event, choice)
@@ -83,6 +85,7 @@ local EVENT_DEFS = {
 	},
 
 	crypt_sarcophagus = {
+		cancel_index = 2,
 		message = "A sealed sarcophagus rests before you.",
 		options = {"Open", "Leave"},
 		resolve = function(game, event, choice)
@@ -102,6 +105,7 @@ local EVENT_DEFS = {
 	},
 
 	crypt_tomb = {
+		cancel_index = 2,
 		message = "The tomb has been disturbed. Claw marks scar the stone.",
 		options = {"Investigate", "Leave"},
 		resolve = function(game, event, choice)
@@ -133,6 +137,7 @@ local EVENT_DEFS = {
 	},
 
 	arena_challenge = {
+		cancel_index = 2,
 		message = "The challenge stone pulses with energy.",
 		options = {"Enter Arena", "Leave"},
 		resolve = function(game, event, choice)
@@ -145,6 +150,7 @@ local EVENT_DEFS = {
 	},
 
 	arena_trial = {
+		cancel_index = 4,
 		message = "The blood seal offers a greater challenge.",
 		options = {
 			"Trial of Wounds",
@@ -175,6 +181,7 @@ local EVENT_DEFS = {
 	},
 
 	ruin_debris = {
+		cancel_index = 2,
 		message = "Broken stone litters the floor.",
 		options = {"Search", "Ignore"},
 		resolve = function(game, event, choice)
@@ -194,6 +201,7 @@ local EVENT_DEFS = {
 	},
 
 	ruin_statue = {
+		cancel_index = 2,
 		message = "The statue stands weathered and worn. The face has been removed.",
 		options = {"Examine", "Ignore"},
 		resolve = function(game, event, choice)
@@ -225,6 +233,7 @@ local EVENT_DEFS = {
 	},
 
 	hall_brazier = {
+		cancel_index = 2,
 		message = "The brazier flickers with ancient flame.",
 		options = {"Light", "Ignore"},
 		resolve = function(game, event, choice)
@@ -238,6 +247,7 @@ local EVENT_DEFS = {
 	},
 
 	shrine_reliquary = {
+		cancel_index = 2,
 		message = "A forgotten reliquary reveals itself.",
 		options = {"Open", "Leave"},
 		resolve = function(game, event, choice)
@@ -261,6 +271,7 @@ local EVENT_DEFS = {
 	},
 
 	hidden_passage = {
+		cancel_index = 2,
 		message = "A concealed passage opens before you.",
 		options = {"Enter Passage", "Leave"},
 		resolve = function(game, event, choice)
@@ -285,6 +296,7 @@ local EVENT_DEFS = {
 	},
 
 	side_door = {
+		cancel_index = 2,
 		message = "A strange door stands where no door should be.",
 		options = {"Open Door", "Leave"},
 		resolve = function(game, event, choice)
@@ -333,6 +345,7 @@ function M.start(event_type, poi)
 		result = nil,
 		done = false,
 		poi = poi,
+		cancel_index = def.cancel_index,
 	}
 end
 

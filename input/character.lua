@@ -2,13 +2,12 @@ local M = {}
 
 function M.get_action(key)
 	local map = {
+		c = "character",
+		escape = "close",
 		up = "up",
 		down = "down",
-		w = "up",
-		s = "down",
+		return_ = "confirm",
 		["return"] = "confirm",
-		space = "confirm",
-		escape = "cancel",
 	}
 
 	return map[key]

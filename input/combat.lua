@@ -7,8 +7,9 @@ function M.get_action(key)
 
 		q = "guard",
 		e = "skill",
+		f = "flee",
 
-		escape = "flee"
+		escape = "pause"
 	}
 
 	return map[key]
