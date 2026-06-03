@@ -14,6 +14,8 @@ function M.get_action(key)
 
 		e = "interact",
 		f = "inspect",
+		c = "character",
+		escape = "pause",
 	}
 
 	return map[key]

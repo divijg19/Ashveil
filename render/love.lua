@@ -2,10 +2,16 @@ local explore = require("render.explore")
 local combat = require("render.combat")
 local transition = require("render.transition")
 local event_view = require("render.event")
+local character_view = require("render.character")
 
 local M = {}
 
+-- =============================
+-- SCENE DISPATCH
+-- =============================
+
 function M.draw(state)
+	-- scene content first
 	if state.scene:is("explore") then
 		explore.draw(state)
 
@@ -21,17 +27,59 @@ function M.draw(state)
 		transition.draw(state)
 	end
 
-	-- bottom narrative panel (overlays all scenes)
-	local panel = state.message_panel
+	-- persistent HUD overlays
+	M.draw_top_panel(state)
+	M.draw_bottom_narrative(state)
+	M.draw_bottom_actions(state)
 
-	if panel then
-		M.draw_message_panel(panel)
+	-- character sheet overlay (topmost)
+	if state.show_character then
+		character_view.draw(state)
 	end
 end
 
-function M.draw_message_panel(panel)
-	local msg = panel.current()
+-- =============================
+-- TOP-LEFT CHARACTER PANEL
+-- =============================
 
+function M.draw_top_panel(state)
+	local w = love.graphics.getWidth()
+	local p = state.player
+
+	-- solid background (taller for vertical stats)
+	love.graphics.setColor(0.08, 0.08, 0.08, 0.88)
+	love.graphics.rectangle("fill", 8, 8, 155, 92)
+
+	-- subtle edge
+	love.graphics.setColor(0.3, 0.3, 0.3, 0.4)
+	love.graphics.rectangle("line", 8, 8, 155, 92)
+
+	-- floor + vitality
+	love.graphics.setColor(0.85, 0.85, 0.85, 1)
+	love.graphics.print("Floor " .. state.floor, 16, 12)
+	love.graphics.print("Vitality " .. p.stats.vitality, 16, 26)
+
+	-- vertical stats (readability > density)
+	love.graphics.setColor(0.65, 0.65, 0.65, 1)
+	love.graphics.print("STR  " .. p.stats.strength, 16, 42)
+	love.graphics.print("RES  " .. p.stats.resolve, 16, 54)
+	love.graphics.print("PER  " .. p.stats.perception, 16, 66)
+	love.graphics.print("AGI  " .. p.stats.agility, 16, 78)
+
+	love.graphics.setColor(1, 1, 1, 1)
+end
+
+-- =============================
+-- BOTTOM NARRATIVE PANEL
+-- =============================
+
+function M.draw_bottom_narrative(state)
+	local panel = state.message_panel
+	if not panel then
+		return
+	end
+
+	local msg = panel.current()
 	if not msg then
 		return
 	end
@@ -39,75 +87,90 @@ function M.draw_message_panel(panel)
 	local w = love.graphics.getWidth()
 	local h = love.graphics.getHeight()
 
-	local panel_w = math.min(500, w - 60)
-	local panel_h = 80
-	local px = (w - panel_w) / 2
-	local py = h - 130
+	local ph = 80
+	local px = 10
+	local py = h - ph - 50
 
-	-- panel backing
-	love.graphics.setColor(
-		0,
-		0,
-		0,
-		0.6
-	)
+	love.graphics.setColor(0.08, 0.08, 0.08, 0.9)
+	love.graphics.rectangle("fill", px, py, w - 20, ph)
 
-	love.graphics.rectangle(
-		"fill",
-		px,
-		py,
-		panel_w,
-		panel_h
-	)
+	love.graphics.setColor(0.3, 0.3, 0.3, 0.4)
+	love.graphics.rectangle("line", px, py, w - 20, ph)
 
-	-- subtle edge
-	love.graphics.setColor(
-		0.35,
-		0.35,
-		0.35,
-		0.25
-	)
-
-	love.graphics.rectangle(
-		"line",
-		px,
-		py,
-		panel_w,
-		panel_h
-	)
-
-	-- atmospheric message text
-	love.graphics.setColor(
-		0.85,
-		0.85,
-		0.85,
-		msg.alpha
-	)
-
+	-- message text
+	love.graphics.setColor(0.85, 0.85, 0.85, msg.alpha or 1)
 	love.graphics.printf(
 		msg.text,
 		px + 20,
 		py + 18,
-		panel_w - 40,
+		w - 60,
 		"center"
 	)
 
-	-- acknowledgment prompt (only when waiting)
+	-- acknowledgment prompt
 	if msg.is_waiting then
-		love.graphics.setColor(
-			0.6,
-			0.6,
-			0.6,
-			msg.alpha * 0.7
-		)
-
+		love.graphics.setColor(0.6, 0.6, 0.6, (msg.alpha or 1) * 0.7)
 		love.graphics.printf(
 			"[ Enter ]",
 			px + 20,
-			py + panel_h - 22,
-			panel_w - 40,
+			py + ph - 22,
+			w - 60,
 			"center"
 		)
+	end
+
+	love.graphics.setColor(1, 1, 1, 1)
+end
+
+-- =============================
+-- BOTTOM ACTION BAR
+-- =============================
+
+function M.draw_bottom_actions(state)
+	local w = love.graphics.getWidth()
+	local h = love.graphics.getHeight()
+
+	local py = h - 42
+
+	-- background strip
+	love.graphics.setColor(0.08, 0.08, 0.08, 0.85)
+	love.graphics.rectangle("fill", 0, py, w, 42)
+
+	love.graphics.setColor(0.3, 0.3, 0.3, 0.3)
+	love.graphics.rectangle("line", 0, py, w, 42)
+
+	-- context-sensitive prompts
+	love.graphics.setColor(0.7, 0.7, 0.7, 1)
+
+	local left = 20
+	local spacing = 160
+
+	if state.scene:is("explore") or state.scene:is("event") then
+		local poi = state.nearby_poi
+		if poi and poi.poi then
+			local action = poi.poi.interaction.action
+			love.graphics.print("[E] " .. action, left, py + 12)
+			left = left + spacing
+
+			if poi.poi.inspect then
+				love.graphics.print("[F] Inspect", left, py + 12)
+				left = left + spacing
+			end
+		end
+
+		love.graphics.print("[C] Character", left, py + 12)
+		left = left + spacing
+
+		love.graphics.print("ESC Menu", left, py + 12)
+
+	elseif state.scene:is("combat") then
+		love.graphics.print("[W] Attack", left, py + 12)
+		left = left + spacing
+		love.graphics.print("[Q] Brace", left, py + 12)
+		left = left + spacing
+		love.graphics.print("[E] Skill", left, py + 12)
+		left = left + spacing
+		love.graphics.print("[F] Flee", left, py + 12)
 	end
 
 	love.graphics.setColor(1, 1, 1, 1)

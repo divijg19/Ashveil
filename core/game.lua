@@ -14,6 +14,7 @@ local MessagePanel = require("Engine.runtime.message_panel")
 local Events = require("Engine.runtime.events")
 local POI = require("Engine.runtime.poi")
 local Inspection = require("Engine.runtime.inspection")
+local Relics = require("Engine.runtime.relics")
 
 local Compositions = require("world.compositions")
 local movement = require("systems.movement")
@@ -54,6 +55,9 @@ function Game:new()
 				agility = 1,
 			},
 			blessings = {},
+			relics = {},
+			stance = "guarded",
+			floor_heal_used = false,
 			trial_mod = nil,
 		},
 
@@ -82,6 +86,14 @@ function Game:new()
 		log = "",
 
 		is_game_over = false,
+
+		show_character = false,
+
+		show_pause = false,
+
+		character_sheet = {
+			selection = 1,
+		},
 	}
 
 	Environment.populate(
@@ -102,10 +114,27 @@ end
 
 function Game:update(action)
 	if self.is_game_over then
+		self.show_character = false
+		self.show_pause = false
 		return
 	end
 
 	self.log = ""
+
+	if self.show_character then
+		self:update_character(action)
+		return
+	end
+
+	if self.show_pause then
+		self:update_pause(action)
+		return
+	end
+
+	if action == "pause" then
+		self.show_pause = true
+		return
+	end
 
 	SceneLoop.update(
 		self,
@@ -114,6 +143,8 @@ function Game:update(action)
 
 	if self.player.stats.vitality <= 0 then
 		self.is_game_over = true
+		self.show_character = false
+		self.show_pause = false
 		self.log = "You died in the Veil."
 	end
 end
@@ -133,9 +164,55 @@ function Game:update_explore(action)
 		return
 	end
 
+	if action == "character" then
+		self.show_character = true
+		self.character_sheet.selection = 1
+		return
+	end
+
 	self:player_turn(action)
 	self:world_turn()
 	self.nearby_poi = POI.near(self)
+end
+
+function Game:update_character(action)
+	if not action then
+		return
+	end
+
+	if action == "close" then
+		self.show_character = false
+		return
+	end
+
+	if action == "up" then
+		self.character_sheet.selection = math.max(
+			1,
+			self.character_sheet.selection - 1
+		)
+	elseif action == "down" then
+		self.character_sheet.selection = math.min(
+			3,
+			self.character_sheet.selection + 1
+		)
+	elseif action == "confirm" then
+		local stances = {"guarded", "aggressive", "focused"}
+		self.player.stance = stances[
+			self.character_sheet.selection
+		]
+	end
+end
+
+function Game:update_pause(action)
+	if not action then
+		return
+	end
+
+	if action == "resume" then
+		self.show_pause = false
+	elseif action == "quit" then
+		love.event.quit()
+	end
 end
 
 function Game:player_turn(action)
@@ -495,6 +572,10 @@ function Game:update_event(action)
 
 	elseif action == "confirm" then
 		Events.resolve(self, ev, ev.selection)
+	elseif action == "cancel" then
+		if ev.cancel_index then
+			Events.resolve(self, ev, ev.cancel_index)
+		end
 	end
 end
 
@@ -534,6 +615,12 @@ function Game:get_draw_data()
 		scene = self.scene,
 
 		is_game_over = self.is_game_over,
+
+		show_character = self.show_character,
+
+		show_pause = self.show_pause,
+
+		character_sheet = self.character_sheet,
 	}
 end
 
