@@ -1,10 +1,11 @@
 local Relics = require("Engine.runtime.relics")
+local Knowledge = require("systems.knowledge")
 
 local STANCES = {"guarded", "aggressive", "focused"}
 local STANCE_LABELS = {
 	guarded = "Guarded     (-1 damage taken)",
 	aggressive = "Aggressive  (+1 dealt, +1 taken)",
-	focused = "Focused     (+2 effective Perception)",
+	focused = "Focused     (+3 Scout)",
 }
 
 local M = {}
@@ -143,7 +144,64 @@ function M.draw(state)
 		end
 	end
 
-	cy = cy + 20
+	cy = cy + 10
+
+	-- knowledge journal
+	if p.knowledge then
+		local arch_order = {"brute", "stalker", "watcher", "fanatic"}
+		local shown = 0
+		local max_shown = 10
+
+		love.graphics.setColor(0.9, 0.9, 0.9, 1)
+		love.graphics.print("-- Observed Creatures --", cx, cy)
+		cy = cy + line_h + 4
+
+		local klh = 14
+
+		for _, arch in ipairs(arch_order) do
+			if shown >= max_shown then
+				love.graphics.setColor(0.5, 0.5, 0.5, 1)
+				love.graphics.print("+ more...", cx, cy)
+				cy = cy + klh
+				break
+			end
+
+			local entry = p.knowledge[arch]
+			if entry and entry.encounters > 0 then
+				shown = shown + 1
+				local total = Knowledge.fact_count(arch)
+				local disc = Knowledge.discovered_count(p, arch)
+
+				local label = arch:gsub("^%l", string.upper)
+				love.graphics.setColor(0.75, 0.75, 0.75, 1)
+				love.graphics.print(label, cx, cy)
+				cy = cy + klh
+
+				love.graphics.setColor(0.5, 0.5, 0.5, 1)
+				love.graphics.print("Seen: " .. entry.encounters .. "  |  Observed: " .. disc .. "/" .. total, cx + 8, cy)
+				cy = cy + klh
+
+				love.graphics.setColor(0.5, 0.55, 0.6, 0.7)
+				for key, fact in pairs(entry.facts) do
+					if fact.discovered then
+						love.graphics.setColor(0.55, 0.7, 0.55, 0.8)
+						love.graphics.print("  " .. fact.text, cx + 8, cy)
+						cy = cy + klh
+					end
+				end
+
+				-- Show undiscovered slots
+				local undisc = Knowledge.undiscovered_facts(p, arch)
+				for _ = 1, #undisc do
+					love.graphics.setColor(0.4, 0.4, 0.4, 0.5)
+					love.graphics.print("  ?", cx + 8, cy)
+					cy = cy + klh
+				end
+			end
+		end
+	end
+
+	cy = cy + 10
 
 	-- close hint
 	love.graphics.setColor(0.5, 0.5, 0.5, 1)

@@ -1,5 +1,9 @@
+-- DEPRECATED: old exploration-damage system (systems/combat.lua) has been
+-- replaced by full encounter combat. If an enemy reaches the player during
+-- world_turn, it now triggers a combat encounter rather than dealing 1 damage.
+-- See systems/combat.lua (header) for the deprecated implementation.
+
 local movement = require("systems.movement")
-local combat = require("systems.combat")
 
 local M = {}
 
@@ -9,7 +13,8 @@ function M.enemy_turn(game, e)
 		return
 	end
 
-	if combat.enemy_vs_player(game, nx, ny) then
+	if nx == game.player.x and ny == game.player.y then
+		game:start_combat(e)
 		return
 	end
 

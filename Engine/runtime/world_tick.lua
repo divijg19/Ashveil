@@ -11,16 +11,11 @@ function M.update(game, ai)
 			)
 
 		else
-			local before_hp =
-				game.player.stats.vitality
-
 			ai.enemy_turn(game, e)
 
-			if game.player.stats.vitality
-				< before_hp
-			then
-				game.log =
-					"Enemy hit you."
+			-- Combat encounter started during enemy turn; stop processing
+			if game.scene:is("transition") then
+				break
 			end
 		end
 	end
