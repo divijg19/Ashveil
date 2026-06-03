@@ -65,9 +65,7 @@ function love.update(dt)
 		action = combat_input.get_action(key)
 	end
 
-	if action then
-		game:update(action)
-	end
+	game:update(action)
 end
 
 function love.draw()
