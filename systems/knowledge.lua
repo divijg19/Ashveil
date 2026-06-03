@@ -4,11 +4,11 @@ local ARCHETYPE_FACTS = {
 	brute = {
 		favors_heavy = { text = "Favors heavy, powerful strikes.", discovered = false },
 		recovers_wounded = { text = "Becomes more defensive when wounded.", discovered = false },
-		predictable_wounded = { text = "Grows predictable under pressure.", discovered = false },
+		predictable_wounded = { text = "Withstands significant punishment before faltering.", discovered = false },
 	},
 	stalker = {
 		rarely_defends = { text = "Rarely takes a defensive stance.", discovered = false },
-		relentless = { text = "Attacks relentlessly when wounded.", discovered = false },
+		relentless = { text = "Strikes relentlessly.", discovered = false },
 		no_recovery = { text = "Favors offense over recovery.", discovered = false },
 	},
 	watcher = {
@@ -70,19 +70,6 @@ function M.undiscovered_facts(player, archetype)
 	return result
 end
 
-function M.current_facts(player, archetype)
-	local result = {}
-	if not player.knowledge or not player.knowledge[archetype] then
-		return result
-	end
-	for key, fact in pairs(player.knowledge[archetype].facts) do
-		if fact.discovered then
-			table.insert(result, fact.text)
-		end
-	end
-	return result
-end
-
 function M.fact_text(archetype, key)
 	if ARCHETYPE_FACTS[archetype] and ARCHETYPE_FACTS[archetype][key] then
 		return ARCHETYPE_FACTS[archetype][key].text
@@ -110,6 +97,19 @@ function M.discovered_count(player, archetype)
 		end
 	end
 	return count
+end
+
+function M.mastered(player, archetype)
+	local entry = player.knowledge[archetype]
+	if not entry or entry.encounters < 10 then
+		return false
+	end
+	for _, fact in pairs(entry.facts) do
+		if not fact.discovered then
+			return false
+		end
+	end
+	return true
 end
 
 return M

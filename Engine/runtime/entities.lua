@@ -15,6 +15,10 @@ local ARCHETYPES = {
 		hp = 4,
 		intent_weights = { attack = 3, heavy_attack = 3, defend = 1, recover = 1 },
 	},
+	sentinel = {
+		hp = 6,
+		intent_weights = { attack = 1, heavy_attack = 1, defend = 1, recover = 1 },
+	},
 }
 
 local ARCHETYPE_NAMES = {"brute", "stalker", "watcher"}
@@ -42,14 +46,6 @@ function M.spawn_enemy(enemies, room, archetype)
 		hp = hp,
 		max_hp = hp,
 	})
-end
-
-function M.cleanup_dead(enemies)
-	for i = #enemies, 1, -1 do
-		if enemies[i].hp <= 0 then
-			table.remove(enemies, i)
-		end
-	end
 end
 
 function M.get_at(entities, x, y)

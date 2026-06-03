@@ -30,7 +30,7 @@ local TELLS = {
 		},
 		{
 			text = "The Stalker watches for an opening.",
-			hints = {"attack", "heavy_attack"},
+			hints = {"attack", "recover"},
 		},
 		{
 			text = "The Stalker vanishes from sight.",
@@ -71,6 +71,24 @@ local TELLS = {
 		{
 			text = "The Fanatic mutters under its breath.",
 			hints = {"recover", "heavy_attack"},
+		},
+	},
+	sentinel = {
+		{
+			text = "The Sentinel reflects your stance.",
+			hints = {"defend", "recover"},
+		},
+		{
+			text = "The Sentinel moves as if remembering.",
+			hints = {"attack", "heavy_attack"},
+		},
+		{
+			text = "The Sentinel's gaze flickers with recognition.",
+			hints = {"heavy_attack", "defend"},
+		},
+		{
+			text = "The Sentinel echoes a past battle.",
+			hints = {"attack", "recover"},
 		},
 	},
 }

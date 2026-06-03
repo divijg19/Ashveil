@@ -71,10 +71,4 @@ function M.spawn(game, room, config)
 	return prop
 end
 
-function M.complete(poi)
-	if poi and poi.poi then
-		poi.poi.state = "completed"
-	end
-end
-
 return M

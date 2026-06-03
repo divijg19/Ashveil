@@ -2,6 +2,12 @@ local Entities = require("Engine.runtime.entities")
 local Props = require("Engine.runtime.props")
 local Discovery = require("Engine.runtime.discovery")
 
+local Threshold = require("Engine.runtime.milestones.threshold")
+local EchoChamber = require("Engine.runtime.milestones.echo_chamber")
+local WoundAnomaly = require("Engine.runtime.milestones.wound_anomaly")
+local HeartBelow = require("Engine.runtime.milestones.heart_below")
+local Variants = require("Engine.runtime.variants")
+
 local M = {}
 
 function M.populate(game, rooms, compositions, anomaly)
@@ -30,6 +36,20 @@ function M.populate(game, rooms, compositions, anomaly)
 				room,
 				archetype
 			)
+
+			-- Variant roll for non-sentinel enemies
+			if archetype ~= "sentinel" then
+				local last = game.enemies[#game.enemies]
+				if last then
+					local variant_id =
+						Variants.roll_variant(
+							game.floor
+						)
+					if variant_id then
+						last.variant = variant_id
+					end
+				end
+			end
 		end
 	end
 
@@ -90,6 +110,38 @@ function M.populate(game, rooms, compositions, anomaly)
 	end
 
 	M.tag_pois(game, rooms, anomaly)
+
+	-- Milestone post-processing
+	for _, room in ipairs(rooms) do
+		if room.type == "threshold" then
+			Threshold.setup(game, room)
+		end
+
+		if game.floor == 10 and room.type ~= "quiet" then
+			-- Use first non-quiet room for echo chamber setup
+			if not game._milestone_echo_used then
+				-- Clear existing enemies in this room
+				local cx, cy = room.center.x, room.center.y
+				for i = #game.enemies, 1, -1 do
+					if game.enemies[i].x == cx and game.enemies[i].y == cy then
+						table.remove(game.enemies, i)
+					end
+				end
+				EchoChamber.setup(game, room)
+				game._milestone_echo_used = true
+			end
+		end
+	end
+
+	game._milestone_echo_used = nil
+
+	if game.floor == 15 then
+		WoundAnomaly.setup(game)
+	end
+
+	if game.floor == 20 then
+		HeartBelow.setup(game)
+	end
 end
 
 function M.tag_pois(game, rooms, anomaly)
@@ -193,9 +245,9 @@ function M.tag_pois(game, rooms, anomaly)
 					x = cx + love.math.random(-2, 2),
 					y = cy + love.math.random(-2, 2),
 					type = "hidden_passage",
-				action = "Enter Passage",
-				event_type = "hidden_passage",
-				inspect = "A passage has been concealed behind the stone.",
+					action = "Enter Passage",
+					event_type = "hidden_passage",
+					inspect = "A passage has been concealed behind the stone.",
 					tags = {"discovery"},
 				})
 			end
@@ -286,8 +338,8 @@ function M.tag_pois(game, rooms, anomaly)
 						state = "active",
 						tags = {"curiosity"},
 						interaction = {
-						action = "Open Door",
-						event_type = "side_door",
+							action = "Open Door",
+							event_type = "side_door",
 						},
 						inspect = "A strange door stands where no door should be.",
 					}

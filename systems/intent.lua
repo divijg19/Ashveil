@@ -19,7 +19,7 @@ local ARCHETYPE_RULES = {
 	},
 }
 
-function M.select_intent(archetype, hp, max_hp)
+function M.select_intent(archetype, hp, max_hp, variant_tendency)
 	local def = Entities.archetype_def(archetype)
 	if not def then
 		return "attack"
@@ -52,6 +52,18 @@ function M.select_intent(archetype, hp, max_hp)
 		elseif archetype == "fanatic" then
 			weights.heavy_attack = (weights.heavy_attack or 0) + 2
 		end
+	end
+
+	-- Variant tendency shift (applied after wounded checks)
+	if variant_tendency == "recover" then
+		weights.recover = (weights.recover or 0) + 2
+	elseif variant_tendency == "heavy" then
+		weights.heavy_attack = (weights.heavy_attack or 0) + 2
+	elseif variant_tendency == "heavy_wounded"
+		and hp and max_hp
+		and hp <= math.floor(max_hp / 2)
+	then
+		weights.heavy_attack = (weights.heavy_attack or 0) + 3
 	end
 
 	local total = 0

@@ -15,6 +15,8 @@ local Events = require("Engine.runtime.events")
 local POI = require("Engine.runtime.poi")
 local Inspection = require("Engine.runtime.inspection")
 local Relics = require("Engine.runtime.relics")
+local Regions = require("Engine.runtime.regions")
+local Variants = require("Engine.runtime.variants")
 local Intent = require("systems.intent")
 local Tells = require("systems.tells")
 local Dice = require("systems.dice")
@@ -44,11 +46,6 @@ function Game:new()
 
 		floor = 1,
 
-		seed =
-			love.math.random(
-				999999
-			),
-
 		player = {
 			x = spawn.x,
 			y = spawn.y,
@@ -63,7 +60,9 @@ function Game:new()
 			relics = {},
 			stance = "guarded",
 			floor_heal_used = false,
+			blessing_doubled = false,
 			trial_mod = nil,
+			discovery_flags = {},
 		},
 
 		enemies = {},
@@ -86,9 +85,11 @@ function Game:new()
 
 		active_poi = nil,
 
-		_prev_log = nil,
-
 		log = "",
+
+		current_region = Regions.for_floor(1),
+
+		seen_regions = {},
 
 		is_game_over = false,
 
@@ -115,6 +116,19 @@ function Game:new()
 	)
 
 	Knowledge.init(obj.player)
+
+	Relics.register_grant_hook(
+		function(player, id)
+			if id == "forgotten_prayer"
+				and not player.discovery_flags.prayer_hint
+			then
+				player.discovery_flags.prayer_hint = true
+				MessagePanel.push(
+					"The prayer is incomplete. The final verse is missing."
+				)
+			end
+		end
+	)
 
 	return obj
 end
@@ -360,7 +374,7 @@ function Game:update_transition()
 			)
 
 			self.scene:set("explore")
-		else
+		elseif data and data.enemy then
 			self.scene:set("combat")
 
 			self.combat =
@@ -374,13 +388,15 @@ function Game:update_transition()
 				self.player,
 				data.enemy.archetype
 			)
+		else
+			self.scene:set("explore")
 		end
 	end
 end
 
 function Game:update_combat(action)
 	local c = self.combat
-	if not c then
+	if not c or not c.enemy then
 		return
 	end
 
@@ -395,7 +411,19 @@ function Game:update_combat(action)
 	-- Turn start: select intent and tell
 	if not c.enemy_intent then
 		local arch = c.enemy.archetype
-		c.enemy_intent = Intent.select_intent(arch, c.enemy_hp, c.enemy.max_hp)
+		local variant_tendency = nil
+		if c.variant then
+			local vdef = Variants.def(c.variant)
+			if vdef then
+				variant_tendency = vdef.tendency
+			end
+		end
+		c.enemy_intent = Intent.select_intent(
+			arch,
+			c.enemy_hp,
+			c.enemy.max_hp,
+			variant_tendency
+		)
 		local tell = Tells.select_tell(arch, c.enemy_intent)
 		c.tell = tell.text
 		MessagePanel.push_passive(c.tell)
@@ -484,15 +512,28 @@ function Game:update_combat(action)
 		elseif self.player.stance == "aggressive" then
 			bonus = bonus - 3
 		end
+		if c.modifier == "shadows" then
+			bonus = bonus - 2
+		end
 
 		local roll = Dice.roll(bonus, 11)
 		c.scout_bonus = 0 -- consumed
+
+		-- Wound anomaly: suppress all scout observations
+		if self.wound_anomaly_active then
+			roll.level = "glimpse"
+		end
 
 		local scout_result = Scout.resolve(
 			c,
 			self.player,
 			roll.level
 		)
+
+		if self.wound_anomaly_active then
+			scout_result.message = "The Veil is bleeding here. It is hard to see clearly."
+		end
+
 		c.scout_observation = scout_result.message
 		c.scout_tier = roll.level
 
@@ -575,7 +616,7 @@ function Game:_process_enemy_turn(c)
 			self.player.stats.vitality = 0
 			c.enemy_intent = nil
 			self.is_game_over = true
-			MessagePanel.push("You were slain.")
+			MessagePanel.push("You died in the Veil.")
 			return nil
 		end
 
@@ -612,6 +653,9 @@ function Game:_process_enemy_turn(c)
 
 	elseif c.enemy_intent == "defend" then
 		self.player.stats.vitality = c.player_hp
+		if c.enemy.archetype == "sentinel" then
+			return "The " .. ename .. " braces. The Veil echoes."
+		end
 		return "The " .. ename .. " braces."
 	end
 
@@ -621,6 +665,9 @@ end
 
 function Game:exit_combat(player_won)
 	local c = self.combat
+	if not c then
+		return
+	end
 
 	Encounter.finish(
 		c,
@@ -636,31 +683,101 @@ function Game:exit_combat(player_won)
 		return
 	end
 
-	if self.player.trial_mod then
-		local mod = self.player.trial_mod
+	-- Blood Sigil: heal 1 on first combat victory each floor
+	if Relics.has(self.player, "blood_sigil")
+		and not self.player.floor_heal_used
+	then
+		self.player.stats.vitality =
+			self.player.stats.vitality + 1
+		self.player.floor_heal_used = true
+		MessagePanel.push(
+			"The sigil pulses. Vitality is restored."
+		)
+	end
+
+	local trial_mod = self.player.trial_mod
+
+	if trial_mod then
 		self.player.trial_mod = nil
 
-		if mod == "wounds" then
+		local rewarded_stat
+
+		if trial_mod == "wounds" then
 			self.player.stats.strength =
 				self.player.stats.strength + 1
 			MessagePanel.push(
 				"You endure the wound. Strength grows."
 			)
+			rewarded_stat = "strength"
 
-		elseif mod == "fury" then
+		elseif trial_mod == "fury" then
 			self.player.stats.resolve =
 				self.player.stats.resolve + 1
 			MessagePanel.push(
 				"You overcome fury. Resolve deepens."
 			)
+			rewarded_stat = "resolve"
 
-		elseif mod == "shadows" then
+		elseif trial_mod == "shadows" then
 			self.player.stats.perception =
 				self.player.stats.perception + 1
 			MessagePanel.push(
 				"You navigate the darkness. Perception sharpens."
 			)
+			rewarded_stat = "perception"
 		end
+
+		-- Warden's Scar: +1 to a random remaining stat after trial reward
+		if rewarded_stat
+			and Relics.has(
+				self.player,
+				"wardens_scar"
+			)
+		then
+			local pool = {
+				"strength",
+				"resolve",
+				"perception",
+			}
+
+			local remaining = {}
+
+			for _, s in ipairs(pool) do
+				if s ~= rewarded_stat then
+					table.insert(remaining, s)
+				end
+			end
+
+			local bonus =
+				remaining[
+					love.math.random(
+						#remaining
+					)
+				]
+
+			self.player.stats[bonus] =
+				self.player.stats[bonus] + 1
+
+			MessagePanel.push(
+				"The scar pulses. +1 "
+					.. bonus:gsub("^%l", string.upper)
+					.. "."
+			)
+		end
+	end
+
+	-- Mark of Ash: check completion after sentinel defeat
+	if c
+		and c.enemy
+		and c.enemy.archetype == "sentinel"
+		and player_won
+		and self.player.discovery_flags.mark_recognized
+		and not self.player.discovery_flags.mark_complete
+	then
+		self.player.discovery_flags.mark_complete = true
+		MessagePanel.push(
+			"The Echo Chamber bears the Mark of Ash. You understand now."
+		)
 	end
 end
 
@@ -684,6 +801,34 @@ function Game:player_interact()
 	local poi = POI.near(self)
 	if not poi then
 		return
+	end
+
+	-- Mark of Ash chain: check in shrine rooms
+	if poi.poi
+		and poi.poi.interaction
+		and poi.poi.interaction.event_type
+	then
+		local et = poi.poi.interaction.event_type
+		if string.find(et, "shrine") then
+			if not self.player.discovery_flags.mark_seen
+				and self.floor >= 2
+				and self.floor <= 4
+			then
+				self.player.discovery_flags.mark_seen = true
+				MessagePanel.push(
+					"A strange symbol is carved into the stone. You do not recognize it."
+				)
+			elseif self.player.discovery_flags.mark_seen
+				and not self.player.discovery_flags.mark_recognized
+				and self.floor >= 6
+				and self.floor <= 8
+			then
+				self.player.discovery_flags.mark_recognized = true
+				MessagePanel.push(
+					"The same symbol. You've seen this before."
+				)
+			end
+		end
 	end
 
 	local event_type = POI.activate(poi)

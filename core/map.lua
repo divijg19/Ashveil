@@ -1,42 +1,9 @@
-local Archetypes = require("world.archetypes")
 local Dungeon = require("Engine.world.dungeon")
 local EchoMemory = require("Engine.runtime.echo_memory")
 local M = {}
 
 local WALL = "#"
 local FLOOR = "."
-
--- ========================================
--- Archetype Selection
--- ========================================
-
-local ROOM_TYPES = {
-	-- silence dominates
-	"quiet",
-	"quiet",
-	"quiet",
-	"quiet",
-	"quiet",
-	"quiet",
-
-	-- connective tissue
-	"hall",
-	"hall",
-	"hall",
-
-	-- uncommon
-	"ruin",
-	"ruin",
-
-	-- rare
-	"crypt",
-
-	-- very rare
-	"shrine",
-
-	-- very rare
-	"arena",
-}
 
 local ROOM_TRANSITIONS = {
 	quiet = {
@@ -74,6 +41,11 @@ local ROOM_TRANSITIONS = {
 		"hall",
 		"quiet",
 	},
+
+	threshold = {
+		"hall",
+		"quiet",
+	},
 }
 
 local function get_room_pool(floor)
@@ -88,6 +60,10 @@ local function get_room_pool(floor)
 		"shrine",
 		"arena",
 	}
+
+	if floor == 5 then
+		table.insert(pool, "threshold")
+	end
 
 	if floor >= 3 then
 		table.insert(pool, "crypt")
@@ -233,6 +209,22 @@ local function generate_room_dimensions(room_type, floor, anomaly)
 	-- ====================================
 	-- Arena
 	-- ====================================
+
+	elseif room_type == "threshold" then
+		local min_w = math.floor(14 * scale)
+		local max_w = math.floor(20 * scale)
+		local min_h = math.floor(6 * scale)
+		local max_h = math.floor(8 * scale)
+
+		if love.math.random() < 0.5 then
+			return
+				love.math.random(min_w, max_w),
+				love.math.random(min_h, max_h)
+		else
+			return
+				love.math.random(min_w, max_w),
+				love.math.random(min_h, max_h)
+		end
 
 	elseif room_type == "arena" then
 		local boost =
@@ -445,6 +437,13 @@ function M.create(
 			end
 		end
 
+		-- Force threshold room as second room on floor 5
+		if floor == 5 and #rooms == 1 then
+			room_type = "threshold"
+			rw = love.math.random(14, 20)
+			rh = love.math.random(6, 8)
+		end
+
 		local rx =
 			love.math.random(
 				2,
@@ -485,8 +484,6 @@ function M.create(
 
 			room.props = {}
 
-			room.archetype = Archetypes[room_type]
-
 			local landmark_chance =
 				math.min(
 					0.05 + floor * 0.015,
@@ -519,10 +516,13 @@ function M.create(
 	local last_room =
 		rooms[#rooms]
 
-	local exit = {
-		x = last_room.center.x,
-		y = last_room.center.y,
-	}
+	local exit
+	if last_room then
+		exit = {
+			x = last_room.center.x,
+			y = last_room.center.y,
+		}
+	end
 
 	return map, rooms, exit
 end
