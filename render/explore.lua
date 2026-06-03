@@ -277,6 +277,47 @@ function M.draw(state)
 				12,
 				24
 			)
+
+		elseif item.prop.type == "monolith" then
+			love.graphics.rectangle(
+				"fill",
+
+				sx - 6,
+				sy - 30,
+
+				12,
+				40
+			)
+
+		elseif item.prop.type == "mural" then
+			love.graphics.rectangle(
+				"fill",
+
+				sx - 18,
+				sy - 12,
+
+				36,
+				24
+			)
+
+		elseif item.prop.type == "veil_echo" then
+			love.graphics.circle(
+				"line",
+
+				sx,
+				sy,
+
+				8
+			)
+
+			love.graphics.circle(
+				"line",
+
+				sx,
+				sy,
+
+				4
+			)
 		end
 
 		elseif item.type == "exit" then
@@ -336,7 +377,7 @@ function M.draw(state)
 		local h = love.graphics.getHeight()
 		love.graphics.setColor(0.75, 0.75, 0.75, 0.85)
 		love.graphics.printf(
-			"You died in the Veil",
+			"You died in the Veil.",
 			0,
 			h / 2 - 20,
 			w,

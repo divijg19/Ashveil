@@ -6,7 +6,6 @@ function M.get_action(key)
 		escape = "close",
 		up = "up",
 		down = "down",
-		return_ = "confirm",
 		["return"] = "confirm",
 	}
 

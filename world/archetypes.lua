@@ -70,6 +70,18 @@ local Archetypes = {
 			"exposure",
 		},
 	},
+
+	threshold = {
+		mood = "transitional",
+
+		geometry = "elongated",
+		density = "minimal",
+
+		tags = {
+			"crossing",
+			"border",
+		},
+	},
 }
 
 return Archetypes

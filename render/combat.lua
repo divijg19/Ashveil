@@ -1,3 +1,5 @@
+local Variants = require("Engine.runtime.variants")
+
 local M = {}
 
 local SCOUT_COLORS = {
@@ -10,18 +12,25 @@ local SCOUT_COLORS = {
 
 function M.draw(state)
 	local c = state.combat
-	if not c then
+	if not c or not c.enemy then
 		return
 	end
 
-	local ename = c.enemy.archetype:gsub("^%l", string.upper)
 	local w = love.graphics.getWidth()
 
-	-- Display max (fury trial adds +2 to enemy HP at start)
-	local display_max = c.enemy.max_hp
-	if c.modifier == "fury" then
-		display_max = c.enemy.max_hp + 2
+	-- Variant: override name
+	local ename
+	if c.variant then
+		local vdef = Variants.def(c.variant)
+		if vdef then
+			ename = vdef.name
+		end
 	end
+	ename = ename or c.enemy.display_name
+		or c.enemy.archetype:gsub("^%l", string.upper)
+
+	-- Display max (variant hp_mod and fury +2 are baked into max_hp)
+	local display_max = c.enemy.max_hp
 
 	-- Combat header
 	love.graphics.setColor(0.6, 0.55, 0.5, 0.25)
@@ -37,7 +46,11 @@ function M.draw(state)
 	local px = (w - pw) / 2
 	local py = 150
 
-	love.graphics.setColor(0.08, 0.08, 0.08, 0.92)
+	if state.wound_anomaly_active then
+		love.graphics.setColor(0.12, 0.06, 0.06, 0.92)
+	else
+		love.graphics.setColor(0.08, 0.08, 0.08, 0.92)
+	end
 	love.graphics.rectangle("fill", px, py, pw, ph)
 
 	love.graphics.setColor(0.25, 0.25, 0.25, 0.35)

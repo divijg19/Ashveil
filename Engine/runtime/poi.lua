@@ -43,10 +43,4 @@ function M.complete(poi)
 	end
 end
 
-function M.available(poi)
-	return poi
-		and poi.poi
-		and poi.poi.state == "active"
-end
-
 return M

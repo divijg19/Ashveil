@@ -134,10 +134,19 @@ function M.draw(state)
 			end
 			local def = Relics.def(id)
 			if def then
-				love.graphics.print(def.name, cx, cy)
+				if def.symbol then
+					love.graphics.print(def.symbol, cx, cy)
+					love.graphics.print(def.name, cx + 16, cy)
+				else
+					love.graphics.print(def.name, cx, cy)
+				end
 				love.graphics.setColor(0.55, 0.55, 0.55, 1)
 				love.graphics.print(def.desc, cx + 16, cy + line_h)
-				cy = cy + line_h * 2
+				if def.artifact then
+					love.graphics.setColor(0.5, 0.5, 0.5, 0.7)
+					love.graphics.print(def.artifact, cx + 16, cy + line_h * 2)
+				end
+				cy = cy + line_h * 3
 				love.graphics.setColor(0.75, 0.75, 0.75, 1)
 			end
 			shown = shown + 1
@@ -180,6 +189,12 @@ function M.draw(state)
 				love.graphics.setColor(0.5, 0.5, 0.5, 1)
 				love.graphics.print("Seen: " .. entry.encounters .. "  |  Observed: " .. disc .. "/" .. total, cx + 8, cy)
 				cy = cy + klh
+
+				if Knowledge.mastered(p, arch) then
+					love.graphics.setColor(0.85, 0.8, 0.6, 1)
+					love.graphics.print("MASTERED", cx + 8, cy)
+					cy = cy + klh
+				end
 
 				love.graphics.setColor(0.5, 0.55, 0.6, 0.7)
 				for key, fact in pairs(entry.facts) do

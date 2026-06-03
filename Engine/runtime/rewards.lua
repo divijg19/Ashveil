@@ -13,7 +13,4 @@ function M.blessing(player, name)
 	table.insert(player.blessings, name)
 end
 
-function M.none()
-end
-
 return M

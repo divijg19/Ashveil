@@ -1,4 +1,5 @@
 local Reward = require("Engine.runtime.rewards")
+local Relics = require("Engine.runtime.relics")
 
 local SYMBOLS = {"△", "□", "○", "◇"}
 
@@ -13,18 +14,40 @@ local EVENT_DEFS = {
 			"Leave",
 		},
 		resolve = function(game, event, choice)
+			-- Broken Prayer chain: step 2
+			if game.player.discovery_flags.prayer_hint
+				and not game.player.discovery_flags.prayer_hint_received
+				and Relics.has(
+					game.player,
+					"forgotten_prayer"
+				)
+			then
+				game.player.discovery_flags.prayer_hint_received = true
+				local MessagePanel = require(
+					"Engine.runtime.message_panel"
+				)
+				MessagePanel.push(
+					"The altar hums in recognition of the prayer."
+				)
+			end
+
+			local bonus = 1
+			if game.player.blessing_doubled then
+				bonus = 2
+			end
+
 			if choice == 1 then
 				Reward.blessing(game.player, "Blessing of Ash")
-				game.player.stats.resolve = game.player.stats.resolve + 1
-				return {message = "Resolve fills you. +1 Resolve."}
+				game.player.stats.resolve = game.player.stats.resolve + bonus
+				return {message = "Resolve fills you. +" .. bonus .. " Resolve."}
 			elseif choice == 2 then
 				Reward.blessing(game.player, "Blessing of Sight")
-				game.player.stats.perception = game.player.stats.perception + 1
-				return {message = "Your perception sharpens. +1 Perception."}
+				game.player.stats.perception = game.player.stats.perception + bonus
+				return {message = "Your perception sharpens. +" .. bonus .. " Perception."}
 			elseif choice == 3 then
 				Reward.blessing(game.player, "Blessing of Might")
-				game.player.stats.strength = game.player.stats.strength + 1
-				return {message = "Strength surges through you. +1 Strength."}
+				game.player.stats.strength = game.player.stats.strength + bonus
+				return {message = "Strength surges through you. +" .. bonus .. " Strength."}
 			end
 			return {message = nil}
 		end,
@@ -47,8 +70,13 @@ local EVENT_DEFS = {
 			elseif roll < 0.80 then
 				local stats = {"strength", "resolve", "perception"}
 				local stat = stats[love.math.random(#stats)]
-				game.player.stats[stat] = game.player.stats[stat] + 1
-				return {message = "A faint understanding settles in your mind. +1 "
+				local bonus = 1
+				if game.player.blessing_doubled then
+					bonus = 2
+				end
+				game.player.stats[stat] = game.player.stats[stat] + bonus
+				return {message = "A faint understanding settles in your mind. +"
+					.. bonus .. " "
 					.. stat:gsub("^%l", string.upper) .. "."}
 
 			else
@@ -111,6 +139,22 @@ local EVENT_DEFS = {
 		resolve = function(game, event, choice)
 			if choice == 2 then
 				return {message = nil}
+			end
+
+			-- Broken Prayer chain: step 3
+			if game.floor >= 10
+				and game.floor <= 14
+				and game.player.discovery_flags.prayer_hint_received
+				and not game.player.discovery_flags.prayer_truth
+				and Relics.has(
+					game.player,
+					"forgotten_prayer"
+				)
+			then
+				game.player.discovery_flags.prayer_truth = true
+				return {
+					message = "The tomb bears the missing verse. The prayer was never meant to end.",
+				}
 			end
 
 			local roll = love.math.random()
@@ -368,10 +412,6 @@ function M.resolve(game, event, choice)
 	event.done = true
 end
 
-function M.complete(game, event)
-	event.done = true
-end
-
 local function trial_resolve(game, event, choice)
 	local trial = event.trial
 	local expected = trial.sequence[trial.step]
@@ -391,19 +431,30 @@ local function trial_resolve(game, event, choice)
 
 	if trial.step > #trial.sequence then
 		trial.mode = "done"
+
+		local bonus = 1
+		if game.player.blessing_doubled then
+			bonus = 2
+		end
+
 		event.message = "The seal accepts your understanding. Choose:"
 		event.options = {
-			"+1 Strength",
-			"+1 Resolve",
-			"+1 Perception",
+			"+" .. bonus .. " Strength",
+			"+" .. bonus .. " Resolve",
+			"+" .. bonus .. " Perception",
 		}
 		event.resolve = function(g, e, c)
 			local stat = c == 1 and "strength"
 				or c == 2 and "resolve"
 				or "perception"
-			g.player.stats[stat] = g.player.stats[stat] + 1
+			local b = 1
+			if g.player.blessing_doubled then
+				b = 2
+			end
+			g.player.stats[stat] = g.player.stats[stat] + b
 			e.done = true
-			return {message = "You feel transformed. +1 "
+			return {message = "You feel transformed. +"
+				.. b .. " "
 				.. stat:gsub("^%l", string.upper) .. "."}
 		end
 		return {trial = true}

@@ -3,6 +3,16 @@ local Environment =
 		"Engine.runtime.environment"
 	)
 
+local Regions =
+	require(
+		"Engine.runtime.regions"
+	)
+
+local MessagePanel =
+	require(
+		"Engine.runtime.message_panel"
+	)
+
 local M = {}
 
 function M.next(
@@ -14,6 +24,8 @@ function M.next(
 	-- ================================
 	-- Advance Floor
 	-- ================================
+
+	local prev_floor = game.floor
 
 	game.floor =
 		game.floor + 1
@@ -59,14 +71,18 @@ function M.next(
 	-- Respawn Player
 	-- ================================
 
-	local spawn =
-		rooms[1].center
+	local spawn_room =
+		rooms[1]
+
+	if not spawn_room then
+		return
+	end
 
 	game.player.x =
-		spawn.x
+		spawn_room.center.x
 
 	game.player.y =
-		spawn.y
+		spawn_room.center.y
 
 	-- ================================
 	-- Descent Messaging
@@ -74,6 +90,36 @@ function M.next(
 
 	game.log = ""
 	game.player.buff_doubled = nil
+	game.player.floor_heal_used = false
+
+	-- ================================
+	-- Region Transition
+	-- ================================
+
+	local new_region =
+		Regions.entered(
+			prev_floor,
+			game.floor
+		)
+
+	if new_region
+		and not game.seen_regions[
+			new_region.floor
+		]
+	then
+		game.seen_regions[
+			new_region.floor
+		] = true
+
+		MessagePanel.push(
+			new_region.desc
+		)
+	end
+
+	game.current_region = new_region
+		or Regions.for_floor(
+			game.floor
+		)
 end
 
 return M
