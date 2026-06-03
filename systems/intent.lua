@@ -19,7 +19,7 @@ local ARCHETYPE_RULES = {
 	},
 }
 
-function M.select_intent(archetype)
+function M.select_intent(archetype, hp, max_hp)
 	local def = Entities.archetype_def(archetype)
 	if not def then
 		return "attack"
@@ -33,13 +33,24 @@ function M.select_intent(archetype)
 	-- Apply archetype rules
 	local rule = ARCHETYPE_RULES[archetype]
 	if rule then
-		-- Stalker cannot defend
 		if rule.no_defend then
 			weights.defend = nil
 		end
-		-- Fanatic favors heavy attacks
 		if rule.heavy_bonus then
 			weights.heavy_attack = (weights.heavy_attack or 0) + rule.heavy_bonus
+		end
+	end
+
+	-- Wounded-state behavior (below 50% HP)
+	if hp and max_hp and hp <= math.floor(max_hp / 2) then
+		if archetype == "brute" then
+			weights.heavy_attack = math.floor((weights.heavy_attack or 0) / 2)
+			weights.recover = (weights.recover or 0) + 2
+		elseif archetype == "watcher" then
+			weights.recover = (weights.recover or 0) + 2
+			weights.defend = (weights.defend or 0) + 1
+		elseif archetype == "fanatic" then
+			weights.heavy_attack = (weights.heavy_attack or 0) + 2
 		end
 	end
 

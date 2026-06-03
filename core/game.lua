@@ -395,10 +395,9 @@ function Game:update_combat(action)
 	-- Turn start: select intent and tell
 	if not c.enemy_intent then
 		local arch = c.enemy.archetype
-		c.enemy_intent = Intent.select_intent(arch)
+		c.enemy_intent = Intent.select_intent(arch, c.enemy_hp, c.enemy.max_hp)
 		local tell = Tells.select_tell(arch, c.enemy_intent)
 		c.tell = tell.text
-		c.tell_hints = tell.hints
 		MessagePanel.push_passive(c.tell)
 
 		-- Insight decrement
@@ -406,8 +405,10 @@ function Game:update_combat(action)
 			c.insight_turns = c.insight_turns - 1
 		end
 
-		-- Reset scout observation for new turn
+		-- Reset per-turn fields
 		c.scout_observation = nil
+		c.scout_tier = nil
+		c.new_fact_text = nil
 	end
 
 	if not action then
@@ -442,6 +443,10 @@ function Game:update_combat(action)
 		if enemy_result == nil then
 			return
 		end
+		local validation = self:_get_validation(c)
+		if validation then
+			enemy_result = enemy_result .. " " .. validation
+		end
 		MessagePanel.push_passive(
 			result .. " " .. enemy_result
 		)
@@ -461,6 +466,10 @@ function Game:update_combat(action)
 		local enemy_result = self:_process_enemy_turn(c)
 		if enemy_result == nil then
 			return
+		end
+		local validation = self:_get_validation(c)
+		if validation then
+			enemy_result = enemy_result .. " " .. validation
 		end
 		MessagePanel.push_passive(
 			result .. " " .. enemy_result
@@ -485,6 +494,11 @@ function Game:update_combat(action)
 			roll.level
 		)
 		c.scout_observation = scout_result.message
+		c.scout_tier = roll.level
+
+		if scout_result.new_fact_text then
+			c.new_fact_text = scout_result.new_fact_text
+		end
 
 		if scout_result.insight_turns > 0 then
 			c.insight_turns = scout_result.insight_turns
@@ -495,9 +509,13 @@ function Game:update_combat(action)
 		if enemy_result == nil then
 			return
 		end
-		MessagePanel.push_passive(
-			scout_result.message .. " " .. enemy_result
-		)
+
+		-- Scout observation lives in combat panel; enemy result in message panel
+		local validation = self:_get_validation(c)
+		if validation then
+			enemy_result = enemy_result .. " " .. validation
+		end
+		MessagePanel.push_passive(enemy_result)
 
 	elseif action == "flee" then
 		MessagePanel.push_passive("You flee the encounter.")
@@ -507,7 +525,26 @@ function Game:update_combat(action)
 
 	-- Clear intent for next turn (brace persists if not consumed)
 	c.enemy_intent = nil
-	c.enemy_intent_flavor = nil
+end
+
+function Game:_get_validation(c)
+	if not c.scout_tier then
+		return nil
+	end
+
+	if c.scout_tier ~= "understand"
+		and c.scout_tier ~= "insight"
+		and c.scout_tier ~= "revelation"
+	then
+		return nil
+	end
+
+	local base = Intent.intent_damage(c.enemy_intent, c.enemy.archetype)
+	if base > 0 then
+		return "Your observation proves accurate."
+	end
+
+	return nil
 end
 
 function Game:_process_enemy_turn(c)

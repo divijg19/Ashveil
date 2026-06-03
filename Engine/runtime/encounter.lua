@@ -8,14 +8,14 @@ function M.start(player, enemy, modifier)
 		modifier = modifier,
 
 		enemy_intent = nil,
-		enemy_intent_flavor = nil,
 		brace_active = false,
 
 		tell = nil,
-		tell_hints = nil,
 		scout_bonus = 0,
 		insight_turns = 0,
 		scout_observation = nil,
+		scout_tier = nil,
+		new_fact_text = nil,
 	}
 
 	if modifier == "wounds" then

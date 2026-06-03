@@ -26,7 +26,7 @@ local TELLS = {
 		},
 		{
 			text = "The Stalker circles quietly.",
-			hints = {"attack"},
+			hints = {"attack", "heavy_attack"},
 		},
 		{
 			text = "The Stalker watches for an opening.",
@@ -44,7 +44,7 @@ local TELLS = {
 		},
 		{
 			text = "The Watcher withdraws slightly.",
-			hints = {"defend"},
+			hints = {"defend", "recover"},
 		},
 		{
 			text = "The Watcher remains perfectly still.",
@@ -62,7 +62,7 @@ local TELLS = {
 		},
 		{
 			text = "The Fanatic lets out a guttural chant.",
-			hints = {"heavy_attack"},
+			hints = {"heavy_attack", "recover"},
 		},
 		{
 			text = "The Fanatic sneers and advances.",
@@ -96,10 +96,6 @@ function M.select_tell(archetype, intent)
 	end
 
 	return candidates[love.math.random(#candidates)]
-end
-
-function M.tell_pool(archetype)
-	return TELLS[archetype] or {}
 end
 
 return M

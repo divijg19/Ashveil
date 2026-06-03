@@ -1,5 +1,13 @@
 local M = {}
 
+local SCOUT_COLORS = {
+	glimpse = {0.5, 0.5, 0.5, 0.6},
+	read = {0.65, 0.65, 0.65, 0.7},
+	understand = {0.7, 0.8, 0.7, 0.8},
+	insight = {0.85, 0.8, 0.6, 0.9},
+	revelation = {0.6, 0.85, 0.85, 1},
+}
+
 function M.draw(state)
 	local c = state.combat
 	if not c then
@@ -23,9 +31,9 @@ function M.draw(state)
 	love.graphics.setColor(0.3, 0.3, 0.3, 0.2)
 	love.graphics.rectangle("fill", w / 2 - 100, 34, 200, 1)
 
-	-- Enemy info panel (taller for tell + scout + insight + facts)
+	-- Enemy info panel (taller for tell + scout + insight + facts + bonus)
 	local pw = 340
-	local ph = 190
+	local ph = 220
 	local px = (w - pw) / 2
 	local py = 150
 
@@ -73,15 +81,41 @@ function M.draw(state)
 		cy = cy + 18
 	end
 
+	-- Scout bonus indicator
+	if c.scout_bonus and c.scout_bonus > 0 then
+		love.graphics.setColor(0.7, 0.75, 0.7, 0.8)
+		love.graphics.print("[Scout +" .. c.scout_bonus .. "]", lx, cy)
+		cy = cy + 18
+	end
+
 	-- Scout observation (if player scouted this turn)
 	if c.scout_observation then
-		love.graphics.setColor(0.7, 0.7, 0.65, 0.8)
+		local sc = SCOUT_COLORS[c.scout_tier] or SCOUT_COLORS.read
+		love.graphics.setColor(sc)
 		love.graphics.print(c.scout_observation, lx, cy)
+		cy = cy + 18
+	end
+
+	-- Knowledge discovery notification (new fact this turn)
+	if c.new_fact_text then
+		love.graphics.setColor(0.6, 0.85, 0.6, 0.85)
+		love.graphics.print("New Observation:", lx, cy)
+		cy = cy + 15
+		love.graphics.setColor(0.7, 0.9, 0.7, 0.9)
+		love.graphics.print(c.new_fact_text, lx + 12, cy)
 		cy = cy + 18
 	end
 
 	-- Insight mode: show direct intent (temporary perfect information)
 	if c.insight_turns and c.insight_turns > 0 and c.enemy_intent then
+		love.graphics.setColor(0.85, 0.8, 0.65, 0.8)
+		love.graphics.print(
+			"Insight: " .. c.insight_turns,
+			lx,
+			cy
+		)
+		cy = cy + 16
+
 		local intent_label = c.enemy_intent:gsub("_", " ")
 		intent_label = intent_label:gsub("^%l", string.upper)
 

@@ -1,4 +1,3 @@
-local Tells = require("systems.tells")
 local Knowledge = require("systems.knowledge")
 
 local M = {}
@@ -32,7 +31,6 @@ local SCOUT_TIERS = {
 
 function M.resolve(combat, player, roll_level)
 	local arch = combat.enemy.archetype
-	local tell_text = combat.tell or ""
 	local templates = SCOUT_TIERS[arch] or SCOUT_TIERS.brute
 	local msg = ""
 
@@ -49,13 +47,14 @@ function M.resolve(combat, player, roll_level)
 	end
 
 	-- Check for fact discovery at insight+
+	local new_fact_text = nil
 	if roll_level == "insight" or roll_level == "revelation" then
 		local facts = Knowledge.undiscovered_facts(player, arch)
 		if #facts > 0 then
 			local key = facts[1]
 			Knowledge.discover(player, arch, key)
-			local fact_text = Knowledge.fact_text(arch, key)
-			msg = msg .. " You observe: " .. fact_text
+			new_fact_text = Knowledge.fact_text(arch, key)
+			msg = msg .. " You observe: " .. new_fact_text
 		end
 	end
 
@@ -68,6 +67,7 @@ function M.resolve(combat, player, roll_level)
 		message = msg,
 		tier = roll_level,
 		insight_turns = insight_turns,
+		new_fact_text = new_fact_text,
 	}
 end
 

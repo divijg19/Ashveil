@@ -2,24 +2,24 @@ local M = {}
 
 local ARCHETYPE_FACTS = {
 	brute = {
-		favors_heavy = { text = "Favors heavy attacks.", discovered = false },
-		recovers_after = { text = "Often recovers after exertion.", discovered = false },
-		predictable_wounded = { text = "Becomes predictable when wounded.", discovered = false },
+		favors_heavy = { text = "Favors heavy, powerful strikes.", discovered = false },
+		recovers_wounded = { text = "Becomes more defensive when wounded.", discovered = false },
+		predictable_wounded = { text = "Grows predictable under pressure.", discovered = false },
 	},
 	stalker = {
 		rarely_defends = { text = "Rarely takes a defensive stance.", discovered = false },
-		relentless = { text = "Attacks relentlessly when closing.", discovered = false },
-		evasive = { text = "Becomes evasive when threatened.", discovered = false },
+		relentless = { text = "Attacks relentlessly when wounded.", discovered = false },
+		no_recovery = { text = "Favors offense over recovery.", discovered = false },
 	},
 	watcher = {
 		patient = { text = "Prefers patient, measured actions.", discovered = false },
 		swift_recovery = { text = "Recovers quickly from harm.", discovered = false },
-		observant = { text = "Watches and waits for openings.", discovered = false },
+		wounded_retreat = { text = "Becomes increasingly defensive when wounded.", discovered = false },
 	},
 	fanatic = {
-		aggressive = { text = "Favors overwhelming offense.", discovered = false },
-		relentless_fury = { text = "Pressures harder as the fight continues.", discovered = false },
-		reckless = { text = "Leaves openings in its aggression.", discovered = false },
+		aggressive = { text = "Rarely retreats once committed.", discovered = false },
+		relentless_fury = { text = "Becomes increasingly reckless when cornered.", discovered = false },
+		reckless = { text = "Predictably aggressive.", discovered = false },
 	},
 }
 
