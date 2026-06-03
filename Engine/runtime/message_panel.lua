@@ -10,9 +10,15 @@ local M = {
 
 function M.push(text)
 	table.insert(M._queue, text)
-	if M._state == "idle" then
+	if M._state == "idle" or M._state == "passive" then
 		M._advance()
 	end
+end
+
+function M.push_passive(text)
+	M._active = text
+	M._state = "passive"
+	M._timer = 0
 end
 
 function M._advance()
@@ -40,7 +46,10 @@ function M.current()
 end
 
 function M:_alpha()
-	if M._state == "fade_in" then
+	if M._state == "passive" then
+		return 1
+
+	elseif M._state == "fade_in" then
 		return math.min(M._timer / M._fade_in, 1)
 
 	elseif M._state == "active" then
@@ -60,7 +69,7 @@ function M:_alpha()
 end
 
 function M.has_active()
-	return M._state ~= "idle"
+	return M._state ~= "idle" and M._state ~= "passive"
 end
 
 function M.acknowledge()
@@ -73,7 +82,7 @@ function M.acknowledge()
 end
 
 function M.update(dt)
-	if M._state == "idle" then
+	if M._state == "idle" or M._state == "passive" then
 		return
 	end
 

@@ -6,6 +6,16 @@ function M.start(player, enemy, modifier)
 		player_hp = player.stats.vitality,
 		enemy_hp = enemy.hp,
 		modifier = modifier,
+
+		enemy_intent = nil,
+		enemy_intent_flavor = nil,
+		brace_active = false,
+
+		tell = nil,
+		tell_hints = nil,
+		scout_bonus = 0,
+		insight_turns = 0,
+		scout_observation = nil,
 	}
 
 	if modifier == "wounds" then

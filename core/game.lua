@@ -15,6 +15,11 @@ local Events = require("Engine.runtime.events")
 local POI = require("Engine.runtime.poi")
 local Inspection = require("Engine.runtime.inspection")
 local Relics = require("Engine.runtime.relics")
+local Intent = require("systems.intent")
+local Tells = require("systems.tells")
+local Dice = require("systems.dice")
+local Scout = require("systems.scout")
+local Knowledge = require("systems.knowledge")
 
 local Compositions = require("world.compositions")
 local movement = require("systems.movement")
@@ -109,6 +114,8 @@ function Game:new()
 		"Welcome to Ashveil."
 	)
 
+	Knowledge.init(obj.player)
+
 	return obj
 end
 
@@ -154,6 +161,10 @@ end
 -- =========================
 
 function Game:update_explore(action)
+	if not action then
+		return
+	end
+
 	if action == "interact" then
 		self:player_interact()
 		return
@@ -359,70 +370,216 @@ function Game:update_transition()
 					self.player.trial_mod
 				)
 
-			local enemy_speed = 2
-			self.combat.player_initiative =
-				love.math.random(
-					1,
-					self.player.stats.agility + enemy_speed
-				) <= self.player.stats.agility
-
-			self.log =
-				"The battle begins!"
+			Knowledge.add_encounter(
+				self.player,
+				data.enemy.archetype
+			)
 		end
 	end
 end
 
 function Game:update_combat(action)
+	local c = self.combat
+	if not c then
+		return
+	end
+
+	-- Check pending exit (victory message awaiting acknowledgment)
+	if c.pending_exit then
+		if not MessagePanel.has_active() then
+			self:exit_combat(c.pending_exit_won)
+		end
+		return
+	end
+
+	-- Turn start: select intent and tell
+	if not c.enemy_intent then
+		local arch = c.enemy.archetype
+		c.enemy_intent = Intent.select_intent(arch)
+		local tell = Tells.select_tell(arch, c.enemy_intent)
+		c.tell = tell.text
+		c.tell_hints = tell.hints
+		MessagePanel.push_passive(c.tell)
+
+		-- Insight decrement
+		if c.insight_turns > 0 then
+			c.insight_turns = c.insight_turns - 1
+		end
+
+		-- Reset scout observation for new turn
+		c.scout_observation = nil
+	end
+
 	if not action then
 		return
 	end
 
-	local c = self.combat
+	local ename = c.enemy.archetype:gsub("^%l", string.upper)
 
 	if action == "attack" then
-		if c.player_initiative then
-			c.enemy_hp = c.enemy_hp - self.player.stats.strength
-			self.log = "You strike the Veilbeast."
-
-			if c.enemy_hp <= 0 then
-				self:exit_combat(true)
-				return
-			end
-
-			c.player_hp = c.player_hp - 1
-
-			if c.player_hp <= 0 then
-				self.player.stats.vitality = 0
-				self.is_game_over = true
-				self.log = "You were slain."
-				return
-			end
-		else
-			c.player_hp = c.player_hp - 1
-
-			if c.player_hp <= 0 then
-				self.player.stats.vitality = 0
-				self.is_game_over = true
-				self.log = "You were slain."
-				return
-			end
-
-			c.enemy_hp = c.enemy_hp - self.player.stats.strength
-			self.log = "You strike the Veilbeast."
-
-			if c.enemy_hp <= 0 then
-				self:exit_combat(true)
-				return
-			end
+		-- Player deals damage
+		local dmg = self.player.stats.strength
+		if self.player.stance == "aggressive" then
+			dmg = dmg + 1
 		end
-	elseif action == "guard" then
-		self.log = "You brace for impact."
-	elseif action == "skill" then
-		self.log = "No skills learned yet."
+		if c.enemy_intent == "defend" then
+			dmg = math.max(1, dmg - 1)
+		end
+		c.enemy_hp = c.enemy_hp - dmg
+
+		if c.enemy_hp <= 0 then
+			MessagePanel.push(
+				"You strike. The " .. ename .. " falls."
+			)
+			c.pending_exit = true
+			c.pending_exit_won = true
+			return
+		end
+
+		-- Enemy acts
+		local result = "You strike."
+		local enemy_result = self:_process_enemy_turn(c)
+		if enemy_result == nil then
+			return
+		end
+		MessagePanel.push_passive(
+			result .. " " .. enemy_result
+		)
+
+	elseif action == "brace" then
+		c.brace_active = true
+		c.scout_bonus = c.scout_bonus + 2
+
+		local result
+		if c.scout_bonus > 2 then
+			result = "You brace for the coming blow, observing carefully."
+		else
+			result = "You steady yourself and watch."
+		end
+
+		-- Enemy acts
+		local enemy_result = self:_process_enemy_turn(c)
+		if enemy_result == nil then
+			return
+		end
+		MessagePanel.push_passive(
+			result .. " " .. enemy_result
+		)
+
+	elseif action == "scout" then
+		-- Calculate effective scout bonus
+		local bonus = (c.scout_bonus or 0)
+			+ self.player.stats.perception
+		if self.player.stance == "focused" then
+			bonus = bonus + 3
+		elseif self.player.stance == "aggressive" then
+			bonus = bonus - 3
+		end
+
+		local roll = Dice.roll(bonus, 11)
+		c.scout_bonus = 0 -- consumed
+
+		local scout_result = Scout.resolve(
+			c,
+			self.player,
+			roll.level
+		)
+		c.scout_observation = scout_result.message
+
+		if scout_result.insight_turns > 0 then
+			c.insight_turns = scout_result.insight_turns
+		end
+
+		-- Enemy acts
+		local enemy_result = self:_process_enemy_turn(c)
+		if enemy_result == nil then
+			return
+		end
+		MessagePanel.push_passive(
+			scout_result.message .. " " .. enemy_result
+		)
+
 	elseif action == "flee" then
+		MessagePanel.push_passive("You flee the encounter.")
 		self:exit_combat(false)
-		self.log = "You fled the encounter."
+		return
 	end
+
+	-- Clear intent for next turn (brace persists if not consumed)
+	c.enemy_intent = nil
+	c.enemy_intent_flavor = nil
+end
+
+function Game:_process_enemy_turn(c)
+	local ename = c.enemy.archetype:gsub("^%l", string.upper)
+	local base = Intent.intent_damage(
+		c.enemy_intent,
+		c.enemy.archetype
+	)
+
+	if base > 0 then
+		local edmg = base
+		if self.player.stance == "aggressive" then
+			edmg = edmg + 1
+		end
+		if self.player.stance == "guarded" then
+			edmg = math.max(1, edmg - 1)
+		end
+		if c.brace_active then
+			edmg = math.max(0, edmg - 1)
+			c.brace_active = false
+		end
+
+		if edmg > 0 then
+			c.player_hp = c.player_hp - edmg
+		end
+
+		if c.player_hp <= 0 then
+			self.player.stats.vitality = 0
+			c.enemy_intent = nil
+			self.is_game_over = true
+			MessagePanel.push("You were slain.")
+			return nil
+		end
+
+		self.player.stats.vitality = c.player_hp
+
+		if edmg > 0 then
+			return "The " .. ename .. " strikes for " .. edmg .. "."
+		else
+			return "You deflect the blow."
+		end
+
+	elseif c.enemy_intent == "recover" then
+		local amount = 1
+		local rule = Intent.archetype_rule(
+			c.enemy.archetype,
+			"recover_amount"
+		)
+		if rule then
+			amount = rule
+		end
+
+		local before = c.enemy_hp
+		c.enemy_hp = math.min(
+			c.enemy_hp + amount,
+			c.enemy.max_hp
+		)
+		self.player.stats.vitality = c.player_hp
+
+		if c.enemy_hp > before then
+			return "The " .. ename .. " recovers."
+		else
+			return "The " .. ename .. " tries to recover."
+		end
+
+	elseif c.enemy_intent == "defend" then
+		self.player.stats.vitality = c.player_hp
+		return "The " .. ename .. " braces."
+	end
+
+	self.player.stats.vitality = c.player_hp
+	return ""
 end
 
 function Game:exit_combat(player_won)

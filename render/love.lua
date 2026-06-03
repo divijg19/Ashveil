@@ -16,6 +16,9 @@ function M.draw(state)
 		explore.draw(state)
 
 	elseif state.scene:is("combat") then
+		local w, h = love.graphics.getWidth(), love.graphics.getHeight()
+		love.graphics.setColor(0.05, 0.05, 0.08, 1)
+		love.graphics.rectangle("fill", 0, 0, w, h)
 		combat.draw(state)
 
 	elseif state.scene:is("event") then
@@ -46,13 +49,13 @@ function M.draw_top_panel(state)
 	local w = love.graphics.getWidth()
 	local p = state.player
 
-	-- solid background (taller for vertical stats)
+	-- solid background (taller for vertical stats + stance)
 	love.graphics.setColor(0.08, 0.08, 0.08, 0.88)
-	love.graphics.rectangle("fill", 8, 8, 155, 92)
+	love.graphics.rectangle("fill", 8, 8, 155, 108)
 
 	-- subtle edge
 	love.graphics.setColor(0.3, 0.3, 0.3, 0.4)
-	love.graphics.rectangle("line", 8, 8, 155, 92)
+	love.graphics.rectangle("line", 8, 8, 155, 108)
 
 	-- floor + vitality
 	love.graphics.setColor(0.85, 0.85, 0.85, 1)
@@ -65,6 +68,16 @@ function M.draw_top_panel(state)
 	love.graphics.print("RES  " .. p.stats.resolve, 16, 54)
 	love.graphics.print("PER  " .. p.stats.perception, 16, 66)
 	love.graphics.print("AGI  " .. p.stats.agility, 16, 78)
+
+	-- stance display (color-coded)
+	local stance_colors = {
+		aggressive = { 0.85, 0.55, 0.45, 1 },
+		guarded = { 0.5, 0.7, 0.85, 1 },
+		focused = { 0.85, 0.8, 0.5, 1 },
+	}
+	local sc = stance_colors[p.stance] or { 0.7, 0.7, 0.65, 1 }
+	love.graphics.setColor(sc)
+	love.graphics.print(p.stance:gsub("^%l", string.upper), 16, 94)
 
 	love.graphics.setColor(1, 1, 1, 1)
 end
@@ -164,13 +177,15 @@ function M.draw_bottom_actions(state)
 		love.graphics.print("ESC Menu", left, py + 12)
 
 	elseif state.scene:is("combat") then
-		love.graphics.print("[W] Attack", left, py + 12)
+		love.graphics.print("[A] Attack", left, py + 12)
 		left = left + spacing
-		love.graphics.print("[Q] Brace", left, py + 12)
+		love.graphics.print("[B] Brace", left, py + 12)
 		left = left + spacing
-		love.graphics.print("[E] Skill", left, py + 12)
+		love.graphics.print("[S] Scout", left, py + 12)
 		left = left + spacing
 		love.graphics.print("[F] Flee", left, py + 12)
+		left = left + spacing
+		love.graphics.print("ESC Menu", left, py + 12)
 	end
 
 	love.graphics.setColor(1, 1, 1, 1)

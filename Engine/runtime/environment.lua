@@ -15,7 +15,21 @@ function M.populate(game, rooms, compositions, anomaly)
 	if not silent then
 		for i = 2, #rooms do
 			local room = rooms[i]
-			Entities.spawn_enemy(game.enemies, room)
+			local archetype
+
+			if room.type == "arena" then
+				if love.math.random() < 0.70 then
+					archetype = "fanatic"
+				else
+					archetype = Entities.random_archetype()
+				end
+			end
+
+			Entities.spawn_enemy(
+				game.enemies,
+				room,
+				archetype
+			)
 		end
 	end
 

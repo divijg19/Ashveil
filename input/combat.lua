@@ -3,10 +3,13 @@ local M = {}
 function M.get_action(key)
 	local map = {
 		w = "attack",
+		a = "attack",
 		space = "attack",
 
-		q = "guard",
-		e = "skill",
+		q = "brace",
+		b = "brace",
+		s = "scout",
+
 		f = "flee",
 
 		escape = "pause"
