@@ -29,6 +29,8 @@ local ARTIFACTS = {
 	},
 }
 
+local MessagePanel = require("Engine.runtime.message_panel")
+
 local M = {}
 
 function M.def(id)
@@ -37,6 +39,9 @@ end
 
 function M.grant(player, id, floor, region, source)
 	if not ARTIFACTS[id] then
+		return false
+	end
+	if player.inventory.artifacts[id] then
 		return false
 	end
 	if floor then
@@ -48,6 +53,15 @@ function M.grant(player, id, floor, region, source)
 	else
 		player.inventory.artifacts[id] = { legacy = true }
 	end
+	local msg = "--- New Artifact ---\n" .. ARTIFACTS[id].name
+	if source then
+		msg = msg .. "\nRecovered from " .. source
+	elseif region then
+		msg = msg .. "\nRecovered: " .. region
+	else
+		msg = msg .. "\nRecovered: Before Records"
+	end
+	MessagePanel.push_passive(msg)
 	return true
 end
 

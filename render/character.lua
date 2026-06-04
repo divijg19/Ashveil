@@ -16,6 +16,13 @@ local BLESSING_SHORT = {
 	["Blessing of Discovery"] = "DISC",
 }
 
+local KEY_ITEM_LABELS = {
+	veil_shard = "Veil Shard",
+	echo_key = "Echo Key",
+	seal_fragment = "Seal Fragment",
+	ash_mark = "Mark of Ash",
+}
+
 local DISCOVERY_LABELS = {
 	fallen_explorer = "Fallen Explorer",
 	torn_satchel = "Torn Satchel",
@@ -225,80 +232,90 @@ function M.draw(state)
 					rcy = rcy + line_h
 				elseif meta and meta.floor then
 					love.graphics.setColor(0.5, 0.5, 0.5, 0.7)
-					love.graphics.print("F" .. meta.floor .. " - " .. meta.region, rcx + 8, rcy)
+					local prov = "F" .. meta.floor .. "  " .. meta.region
+					if meta.source then
+						prov = prov .. "  " .. meta.source
+					end
+					love.graphics.print(prov, rcx + 8, rcy)
 					rcy = rcy + line_h
 				end
 			end
 		end
 	end
 
-	rcy = rcy + 4
+	local max_ry = py + ph - 30
 
-	-- consumables (summarized)
-	love.graphics.setColor(0.9, 0.9, 0.9, 1)
-	love.graphics.print("-- Consumables --", rcx, rcy)
-	rcy = rcy + line_h
+	if rcy < max_ry then
+		rcy = rcy + 4
+		-- consumables (summarized)
+		love.graphics.setColor(0.9, 0.9, 0.9, 1)
+		love.graphics.print("-- Consumables --", rcx, rcy)
+		rcy = rcy + line_h
 
-	local con_ids = {"bandage", "ration"}
-	local has_any = false
-	for _, cid in ipairs(con_ids) do
-		local count = Consumables.count(p, cid)
-		local def = Consumables.def(cid)
-		if def and count > 0 then
-			has_any = true
+		local con_ids = {"bandage", "ration"}
+		local has_any = false
+		for _, cid in ipairs(con_ids) do
+			local count = Consumables.count(p, cid)
+			local def = Consumables.def(cid)
+			if def and count > 0 then
+				has_any = true
+				love.graphics.setColor(0.75, 0.75, 0.75, 1)
+				love.graphics.print(def.name .. " x" .. count, rcx, rcy)
+				rcy = rcy + line_h
+			end
+		end
+		if not has_any then
+			love.graphics.setColor(0.5, 0.5, 0.5, 1)
+			love.graphics.print("(none)", rcx, rcy)
+			rcy = rcy + line_h
+		end
+	end
+
+	if rcy < max_ry then
+		rcy = rcy + 4
+		-- key items
+		love.graphics.setColor(0.9, 0.9, 0.9, 1)
+		love.graphics.print("-- Key Items --", rcx, rcy)
+		rcy = rcy + line_h
+
+		local ki_count = 0
+		for _ in pairs(p.inventory.key_items or {}) do
+			ki_count = ki_count + 1
+		end
+		if ki_count == 0 then
+			love.graphics.setColor(0.5, 0.5, 0.5, 1)
+			love.graphics.print("(none)", rcx, rcy)
+			rcy = rcy + line_h
+		else
 			love.graphics.setColor(0.75, 0.75, 0.75, 1)
-			love.graphics.print(def.name .. " x" .. count, rcx, rcy)
-			rcy = rcy + line_h
-		end
-	end
-	if not has_any then
-		love.graphics.setColor(0.5, 0.5, 0.5, 1)
-		love.graphics.print("(none)", rcx, rcy)
-		rcy = rcy + line_h
-	end
-
-	rcy = rcy + 4
-
-	-- key items
-	love.graphics.setColor(0.9, 0.9, 0.9, 1)
-	love.graphics.print("-- Key Items --", rcx, rcy)
-	rcy = rcy + line_h
-
-	local ki_count = 0
-	for _ in pairs(p.inventory.key_items or {}) do
-		ki_count = ki_count + 1
-	end
-	if ki_count == 0 then
-		love.graphics.setColor(0.5, 0.5, 0.5, 1)
-		love.graphics.print("(none)", rcx, rcy)
-		rcy = rcy + line_h
-	else
-		love.graphics.setColor(0.75, 0.75, 0.75, 1)
-		for id in pairs(p.inventory.key_items) do
-			love.graphics.print(id, rcx, rcy)
-			rcy = rcy + line_h
+			for id in pairs(p.inventory.key_items) do
+				local label = KEY_ITEM_LABELS[id] or id:gsub("_", " "):gsub("^%l", string.upper)
+				love.graphics.print(label, rcx, rcy)
+				rcy = rcy + line_h
+			end
 		end
 	end
 
-	rcy = rcy + 4
-
-	-- recent discoveries
-	love.graphics.setColor(0.9, 0.9, 0.9, 1)
-	love.graphics.print("-- Recent Discoveries --", rcx, rcy)
-	rcy = rcy + line_h
-
-	local log = p.discovery_log or {}
-	if #log == 0 then
-		love.graphics.setColor(0.5, 0.5, 0.5, 1)
-		love.graphics.print("(none yet)", rcx, rcy)
+	if rcy < max_ry then
+		rcy = rcy + 4
+		-- recent discoveries
+		love.graphics.setColor(0.9, 0.9, 0.9, 1)
+		love.graphics.print("-- Recent Discoveries --", rcx, rcy)
 		rcy = rcy + line_h
-	else
-		love.graphics.setColor(0.75, 0.75, 0.75, 1)
-		local first_idx = math.max(1, #log - 4)
-		for i = #log, first_idx, -1 do
-			local label = DISCOVERY_LABELS[log[i]] or log[i]
-			love.graphics.print(label, rcx, rcy)
+
+		local log = p.discovery_log or {}
+		if #log == 0 then
+			love.graphics.setColor(0.5, 0.5, 0.5, 1)
+			love.graphics.print("(none yet)", rcx, rcy)
 			rcy = rcy + line_h
+		else
+			love.graphics.setColor(0.75, 0.75, 0.75, 1)
+			local first_idx = math.max(1, #log - 4)
+			for i = #log, first_idx, -1 do
+				local label = DISCOVERY_LABELS[log[i]] or log[i]
+				love.graphics.print(label, rcx, rcy)
+				rcy = rcy + line_h
+			end
 		end
 	end
 

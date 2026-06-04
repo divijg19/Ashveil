@@ -144,7 +144,7 @@ function Game:new()
 	return obj
 end
 
-function Game:update(action)
+function Game:update(action, dt)
 	if self.is_game_over then
 		self.show_character = false
 		self.show_pause = false
@@ -153,7 +153,7 @@ function Game:update(action)
 
 	self.log = ""
 
-	-- Consumable hotkeys work globally
+	-- Consumable hotkeys (after character sheet / pause check, see main.lua)
 	if action == "1" then
 		self:use_consumable("bandage")
 		return
@@ -179,7 +179,8 @@ function Game:update(action)
 
 	SceneLoop.update(
 		self,
-		action
+		action,
+		dt
 	)
 
 	if self.player.stats.vitality <= 0 then
@@ -368,10 +369,10 @@ function Game:start_combat(enemy)
 	self.log = "A Veil stirs..."
 end
 
-function Game:update_transition()
+function Game:update_transition(dt)
 	local finished =
 		self.transition:update(
-			1 / 60
+			dt or (1 / 60)
 		)
 
 	if finished then
@@ -414,10 +415,18 @@ function Game:update_transition()
 	end
 end
 
-function Game:update_combat(action)
+function Game:update_combat(action, dt)
 	local c = self.combat
 	if not c or not c.enemy then
 		return
+	end
+
+	-- Decrement damage feedback timer
+	if c.damage_feedback then
+		c.damage_feedback.timer = c.damage_feedback.timer - (dt or (1 / 60))
+		if c.damage_feedback.timer <= 0 then
+			c.damage_feedback = nil
+		end
 	end
 
 	-- Check pending exit (victory message awaiting acknowledgment)
@@ -470,6 +479,7 @@ function Game:update_combat(action)
 			dmg = math.max(1, dmg - 1)
 		end
 		c.enemy_hp = c.enemy_hp - dmg
+		c.damage_feedback = {text = "-" .. dmg, timer = 1.5}
 
 		if c.enemy_hp <= 0 then
 			MessagePanel.push(
@@ -481,28 +491,31 @@ function Game:update_combat(action)
 		end
 
 		-- Enemy acts
-		local result = "You strike."
 		local enemy_result = self:_process_enemy_turn(c)
 		if enemy_result == nil then
 			return
 		end
 		local validation = self:_get_validation(c)
+		local parts = {"You strike."}
+		if enemy_result then
+			table.insert(parts, "Action: " .. enemy_result)
+		end
 		if validation then
-			enemy_result = enemy_result .. " " .. validation
+			table.insert(parts, "Result: " .. validation)
 		end
 		MessagePanel.push_passive(
-			result .. " " .. enemy_result
+			table.concat(parts, " ")
 		)
 
 	elseif action == "brace" then
 		c.brace_active = true
 		c.scout_bonus = c.scout_bonus + 2
 
-		local result
+		local msg
 		if c.scout_bonus > 2 then
-			result = "You brace for the coming blow, observing carefully."
+			msg = "You brace for the coming blow, observing carefully."
 		else
-			result = "You steady yourself and watch."
+			msg = "You steady yourself and watch."
 		end
 
 		-- Enemy acts
@@ -511,11 +524,15 @@ function Game:update_combat(action)
 			return
 		end
 		local validation = self:_get_validation(c)
+		local parts = {msg}
+		if enemy_result then
+			table.insert(parts, "Action: " .. enemy_result)
+		end
 		if validation then
-			enemy_result = enemy_result .. " " .. validation
+			table.insert(parts, "Result: " .. validation)
 		end
 		MessagePanel.push_passive(
-			result .. " " .. enemy_result
+			table.concat(parts, " ")
 		)
 
 	elseif action == "scout" then
@@ -584,12 +601,18 @@ function Game:update_combat(action)
 			return
 		end
 
-		-- Scout observation lives in combat panel; enemy result in message panel
+		-- Scout observation lives in combat panel; enemy result + validation in message panel
 		local validation = self:_get_validation(c)
-		if validation then
-			enemy_result = enemy_result .. " " .. validation
+		local parts = {}
+		if enemy_result then
+			table.insert(parts, "Action: " .. enemy_result)
 		end
-		MessagePanel.push_passive(enemy_result)
+		if validation then
+			table.insert(parts, "Result: " .. validation)
+		end
+		MessagePanel.push_passive(
+			table.concat(parts, " ")
+		)
 
 	elseif action == "flee" then
 		MessagePanel.push_passive("You flee the encounter.")
@@ -679,6 +702,7 @@ function Game:_process_enemy_turn(c)
 		self.player.stats.vitality = c.player_hp
 
 		if c.enemy_hp > before then
+			c.damage_feedback = {text = "+" .. amount, timer = 1.5}
 			return "The " .. ename .. " recovers."
 		else
 			return "The " .. ename .. " tries to recover."
@@ -707,6 +731,16 @@ function Game:exit_combat(player_won)
 		self.player,
 		player_won
 	)
+
+	-- Remove dead enemy from active enemies
+	if c.enemy then
+		for i, e in ipairs(self.enemies) do
+			if e == c.enemy then
+				table.remove(self.enemies, i)
+				break
+			end
+		end
+	end
 
 	self.combat = nil
 	self.scene:set("explore")
@@ -885,7 +919,7 @@ function Game:use_consumable(id)
 	end
 
 	if self.scene:is("combat") then
-		MessagePanel.push("Cannot use items in combat.")
+		MessagePanel.push_passive("Cannot use items in combat.")
 		return
 	end
 
@@ -1076,6 +1110,8 @@ function Game:get_draw_data()
 		show_pause = self.show_pause,
 
 		character_sheet = self.character_sheet,
+
+		wound_anomaly_active = self.wound_anomaly_active,
 	}
 end
 

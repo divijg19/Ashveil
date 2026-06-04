@@ -47,6 +47,8 @@ for id in pairs(RELIC_DEFS) do
 	table.insert(AVAILABLE_IDS, id)
 end
 
+local MessagePanel = require("Engine.runtime.message_panel")
+
 local M = {}
 
 local GRANT_HOOKS = {}
@@ -78,6 +80,10 @@ function M.grant(player, id)
 	for _, hook in ipairs(GRANT_HOOKS) do
 		hook(player, id)
 	end
+
+	MessagePanel.push_passive(
+		"New Relic: " .. (def and def.name or id)
+	)
 
 	return true
 end

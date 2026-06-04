@@ -19,6 +19,7 @@ function M.start(player, enemy, modifier)
 		scout_observation = nil,
 		scout_tier = nil,
 		new_fact_text = nil,
+		damage_feedback = nil,
 	}
 
 	-- Apply variant modifiers

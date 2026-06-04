@@ -9,7 +9,6 @@ local CONSUMABLES = {
 			)
 		end,
 		use_message = "You apply a bandage. +2 Vitality.",
-		allow_combat = false,
 	},
 	ration = {
 		name = "Ration",
@@ -21,7 +20,6 @@ local CONSUMABLES = {
 			)
 		end,
 		use_message = "You eat a ration. +1 Vitality.",
-		allow_combat = false,
 	},
 }
 

@@ -14,6 +14,9 @@ function M.enemy_turn(game, e)
 	end
 
 	if nx == game.player.x and ny == game.player.y then
+		if game.scene:is("transition") then
+			return
+		end
 		game:start_combat(e)
 		return
 	end

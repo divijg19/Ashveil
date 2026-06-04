@@ -28,7 +28,7 @@ function love.update(dt)
 
 	-- transitions update continuously (no player input)
 	if game.scene:is("transition") then
-		game:update(nil)
+		game:update(nil, dt)
 		return
 	end
 
@@ -49,15 +49,16 @@ function love.update(dt)
 	local key = love_input.get_key()
 	local action = nil
 
-	if key == "1" then
-		action = "1"
-	elseif key == "2" then
-		action = "2"
-	elseif game.show_character then
+	if game.show_character then
 		action = character_input.get_action(key)
 
 	elseif game.show_pause then
 		action = pause_input.get_action(key)
+
+	elseif key == "1" then
+		action = "1"
+	elseif key == "2" then
+		action = "2"
 
 	elseif game.scene:is("explore") then
 		action = explore_input.get_action(key)
@@ -69,7 +70,7 @@ function love.update(dt)
 		action = combat_input.get_action(key)
 	end
 
-	game:update(action)
+	game:update(action, dt)
 end
 
 function love.draw()

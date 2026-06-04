@@ -21,7 +21,7 @@ local ARCHETYPES = {
 	},
 }
 
-local ARCHETYPE_NAMES = {"brute", "stalker", "watcher"}
+local ARCHETYPE_NAMES = {"brute", "stalker", "watcher", "fanatic", "sentinel"}
 
 local M = {}
 
@@ -43,6 +43,7 @@ function M.spawn_enemy(enemies, room, archetype)
 		y = room.center.y,
 
 		archetype = archetype,
+		display_name = archetype:gsub("^%l", string.upper),
 		hp = hp,
 		max_hp = hp,
 	})

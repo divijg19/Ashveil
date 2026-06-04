@@ -152,16 +152,27 @@ function M.draw_bottom_actions(state)
 	love.graphics.setColor(0.3, 0.3, 0.3, 0.3)
 	love.graphics.rectangle("line", 0, py, w, 42)
 
-	-- context-sensitive prompts
-	love.graphics.setColor(0.7, 0.7, 0.7, 1)
+	-- consumable counts
+	local bandage_count = 0
+	local ration_count = 0
+	if state.player
+		and state.player.inventory
+		and state.player.inventory.consumables
+	then
+		bandage_count = state.player.inventory.consumables.bandage or 0
+		ration_count = state.player.inventory.consumables.ration or 0
+	end
 
+	-- context-sensitive prompts
 	local left = 20
-	local spacing = 160
+	local spacing = state.scene:is("combat") and 130 or 150
 
 	if state.scene:is("explore") or state.scene:is("event") then
+		love.graphics.setColor(0.7, 0.7, 0.7, 1)
+
 		local poi = state.nearby_poi
 		if poi and poi.poi then
-			local action = poi.poi.interaction.action
+			local action = (poi.poi.interaction or {}).action or "Interact"
 			love.graphics.print("[E] " .. action, left, py + 12)
 			left = left + spacing
 
@@ -174,9 +185,23 @@ function M.draw_bottom_actions(state)
 		love.graphics.print("[C] Character", left, py + 12)
 		left = left + spacing
 
+		-- consumables
+		if bandage_count > 0 then
+			love.graphics.setColor(0.7, 0.7, 0.7, 1)
+			love.graphics.print("[1] Bandage x" .. bandage_count, left, py + 12)
+			left = left + spacing
+		end
+		if ration_count > 0 then
+			love.graphics.setColor(0.7, 0.7, 0.7, 1)
+			love.graphics.print("[2] Ration x" .. ration_count, left, py + 12)
+			left = left + spacing
+		end
+
+		love.graphics.setColor(0.7, 0.7, 0.7, 1)
 		love.graphics.print("ESC Menu", left, py + 12)
 
 	elseif state.scene:is("combat") then
+		love.graphics.setColor(0.7, 0.7, 0.7, 1)
 		love.graphics.print("[A] Attack", left, py + 12)
 		left = left + spacing
 		love.graphics.print("[B] Brace", left, py + 12)
@@ -185,7 +210,21 @@ function M.draw_bottom_actions(state)
 		left = left + spacing
 		love.graphics.print("[F] Flee", left, py + 12)
 		left = left + spacing
-		love.graphics.print("ESC Menu", left, py + 12)
+
+		-- consumables
+		if bandage_count > 0 then
+			love.graphics.setColor(0.7, 0.7, 0.7, 1)
+			love.graphics.print("[1] Bandage x" .. bandage_count, left, py + 12)
+			left = left + spacing
+		end
+		if ration_count > 0 then
+			love.graphics.setColor(0.7, 0.7, 0.7, 1)
+			love.graphics.print("[2] Ration x" .. ration_count, left, py + 12)
+			left = left + spacing
+		end
+
+		love.graphics.setColor(0.7, 0.7, 0.7, 1)
+		love.graphics.print("ESC", left, py + 12)
 	end
 
 	love.graphics.setColor(1, 1, 1, 1)
