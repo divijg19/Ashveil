@@ -1,4 +1,6 @@
 local Relics = require("Engine.runtime.relics")
+local Artifacts = require("Engine.runtime.artifacts")
+local Consumables = require("Engine.runtime.consumables")
 local Knowledge = require("systems.knowledge")
 
 local STANCES = {"guarded", "aggressive", "focused"}
@@ -150,6 +152,91 @@ function M.draw(state)
 				love.graphics.setColor(0.75, 0.75, 0.75, 1)
 			end
 			shown = shown + 1
+		end
+	end
+
+	cy = cy + 10
+
+	-- artifacts
+	love.graphics.setColor(0.9, 0.9, 0.9, 1)
+	love.graphics.print("-- Artifacts --", cx, cy)
+	cy = cy + line_h
+
+	local artifact_count = Artifacts.count(p)
+	if artifact_count == 0 then
+		love.graphics.setColor(0.5, 0.5, 0.5, 1)
+		love.graphics.print("(none)", cx, cy)
+		cy = cy + line_h
+	else
+		love.graphics.setColor(0.75, 0.75, 0.75, 1)
+		for id in pairs(p.inventory.artifacts) do
+			local def = Artifacts.def(id)
+			if def then
+				love.graphics.print(def.name, cx, cy)
+				cy = cy + line_h
+				love.graphics.setColor(0.55, 0.55, 0.55, 1)
+				love.graphics.print(def.desc, cx + 8, cy)
+				cy = cy + line_h
+				love.graphics.setColor(0.75, 0.75, 0.75, 1)
+			end
+		end
+	end
+
+	cy = cy + 10
+
+	-- consumables
+	love.graphics.setColor(0.9, 0.9, 0.9, 1)
+	love.graphics.print("-- Consumables --", cx, cy)
+	cy = cy + line_h
+
+	local con_ids = {"bandage", "ration"}
+	local has_any = false
+	for i, cid in ipairs(con_ids) do
+		local count = Consumables.count(p, cid)
+		local def = Consumables.def(cid)
+		if def and count > 0 then
+			has_any = true
+			love.graphics.setColor(0.75, 0.75, 0.75, 1)
+			love.graphics.print("[" .. i .. "] " .. def.name .. " x" .. count, cx, cy)
+			cy = cy + line_h
+		end
+	end
+	if not has_any then
+		love.graphics.setColor(0.5, 0.5, 0.5, 1)
+		love.graphics.print("(none)", cx, cy)
+		cy = cy + line_h
+	end
+
+	cy = cy + 10
+
+	-- gold
+	love.graphics.setColor(0.9, 0.9, 0.9, 1)
+	love.graphics.print("-- Gold --", cx, cy)
+	cy = cy + line_h
+	love.graphics.setColor(0.75, 0.75, 0.75, 1)
+	love.graphics.print(p.gold, cx, cy)
+	cy = cy + line_h
+
+	cy = cy + 10
+
+	-- key items
+	love.graphics.setColor(0.9, 0.9, 0.9, 1)
+	love.graphics.print("-- Key Items --", cx, cy)
+	cy = cy + line_h
+
+	local ki_count = 0
+	for _ in pairs(p.inventory.key_items or {}) do
+		ki_count = ki_count + 1
+	end
+	if ki_count == 0 then
+		love.graphics.setColor(0.5, 0.5, 0.5, 1)
+		love.graphics.print("(none)", cx, cy)
+		cy = cy + line_h
+	else
+		love.graphics.setColor(0.75, 0.75, 0.75, 1)
+		for id in pairs(p.inventory.key_items) do
+			love.graphics.print(id, cx, cy)
+			cy = cy + line_h
 		end
 	end
 

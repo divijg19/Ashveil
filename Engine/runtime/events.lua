@@ -1,5 +1,7 @@
 local Reward = require("Engine.runtime.rewards")
 local Relics = require("Engine.runtime.relics")
+local Artifacts = require("Engine.runtime.artifacts")
+local Consumables = require("Engine.runtime.consumables")
 
 local SYMBOLS = {"△", "□", "○", "◇"}
 
@@ -39,15 +41,18 @@ local EVENT_DEFS = {
 			if choice == 1 then
 				Reward.blessing(game.player, "Blessing of Ash")
 				game.player.stats.resolve = game.player.stats.resolve + bonus
-				return {message = "Resolve fills you. +" .. bonus .. " Resolve."}
+				game.player.gold = game.player.gold + 2
+				return {message = "Resolve fills you. +" .. bonus .. " Resolve. An offering of gold rests at the base."}
 			elseif choice == 2 then
 				Reward.blessing(game.player, "Blessing of Sight")
 				game.player.stats.perception = game.player.stats.perception + bonus
-				return {message = "Your perception sharpens. +" .. bonus .. " Perception."}
+				game.player.gold = game.player.gold + 2
+				return {message = "Your perception sharpens. +" .. bonus .. " Perception. An offering of gold rests at the base."}
 			elseif choice == 3 then
 				Reward.blessing(game.player, "Blessing of Might")
 				game.player.stats.strength = game.player.stats.strength + bonus
-				return {message = "Strength surges through you. +" .. bonus .. " Strength."}
+				game.player.gold = game.player.gold + 2
+				return {message = "Strength surges through you. +" .. bonus .. " Strength. An offering of gold rests at the base."}
 			end
 			return {message = nil}
 		end,
@@ -125,7 +130,12 @@ local EVENT_DEFS = {
 
 			if roll < 0.40 then
 				Reward.vitality(game.player, 1)
-				return {message = "You find preserved vitality within. +1 Vitality."}
+				local msg = "You find preserved vitality within. +1 Vitality."
+				if love.math.random() < 0.50 then
+					Consumables.grant(game.player, "ration")
+					msg = msg .. " Rations, still sealed."
+				end
+				return {message = msg}
 			else
 				return {message = "The sarcophagus is empty."}
 			end
@@ -237,7 +247,8 @@ local EVENT_DEFS = {
 
 			if roll < 0.30 then
 				Reward.vitality(game.player, 1)
-				return {message = "You find a hidden vitality cache. +1 Vitality."}
+				game.player.gold = game.player.gold + 1
+				return {message = "You find a hidden vitality cache. +1 Vitality. A single coin glints nearby."}
 			else
 				return {message = "Nothing but dust and rubble."}
 			end
@@ -259,8 +270,11 @@ local EVENT_DEFS = {
 				local stats = {"strength", "resolve", "perception"}
 				local stat = stats[love.math.random(#stats)]
 				game.player.stats[stat] = game.player.stats[stat] + 1
+				local gold = love.math.random(1, 2)
+				game.player.gold = game.player.gold + gold
 				return {message = "A faint glyph reveals hidden knowledge. +1 "
-					.. stat:gsub("^%l", string.upper) .. "."}
+					.. stat:gsub("^%l", string.upper)
+					.. ". You find " .. gold .. " gold near the base."}
 
 			elseif roll < 0.50 then
 				Reward.vitality(game.player, 1)
@@ -299,18 +313,15 @@ local EVENT_DEFS = {
 				return {message = nil}
 			end
 
-			local stats = {"strength", "resolve", "perception"}
-			local stat1 = stats[love.math.random(#stats)]
-			local stat2 = stats[love.math.random(#stats)]
+			local relic_id = Relics.random_unowned(game.player)
+			if not relic_id then
+				game.player.gold = game.player.gold + 10
+				return {message = "The reliquary is empty. You find scattered gold."}
+			end
 
-			game.player.stats[stat1] = game.player.stats[stat1] + 1
-			game.player.stats[stat2] = game.player.stats[stat2] + 1
-
-			return {message = "Ancient power flows through you. +1 "
-				.. stat1:gsub("^%l", string.upper)
-				.. ", +1 "
-				.. stat2:gsub("^%l", string.upper)
-				.. "."}
+			Relics.grant(game.player, relic_id)
+			local def = Relics.def(relic_id)
+			return {message = "You find " .. def.name .. "."}
 		end,
 	},
 
@@ -327,7 +338,12 @@ local EVENT_DEFS = {
 
 			if roll < 0.40 then
 				Reward.vitality(game.player, 1)
-				return {message = "You find a hidden cache. +1 Vitality."}
+				local msg = "You find a hidden cache. +1 Vitality."
+				if love.math.random() < 0.50 then
+					Consumables.grant(game.player, "bandage")
+					msg = msg .. " A bandage is tucked inside."
+				end
+				return {message = msg}
 
 			elseif roll < 0.70 then
 				Reward.blessing(game.player, "Blessing of Discovery")
@@ -352,7 +368,8 @@ local EVENT_DEFS = {
 
 			if roll < 0.35 then
 				Reward.vitality(game.player, 1)
-				return {message = "A small chamber holds preserved vitality. +1 Vitality."}
+				game.player.gold = game.player.gold + 1
+				return {message = "A small chamber holds preserved vitality. +1 Vitality. A few coins lie scattered."}
 
 			elseif roll < 0.70 then
 				return {message = "The room beyond is empty. Dust covers the floor."}
@@ -368,6 +385,158 @@ local EVENT_DEFS = {
 				Reward.blessing(game.player, name)
 				return {message = "A forgotten shrine lies beyond. " .. name .. "."}
 			end
+		end,
+	},
+
+	fallen_explorer = {
+		cancel_index = 2,
+		message = "A fallen explorer rests against the wall.\nTheir pack is partially open.",
+		options = {"Search", "Leave"},
+		resolve = function(game, event, choice)
+			if choice == 2 then
+				return {message = nil}
+			end
+
+			local gold = love.math.random(1, 3) + math.floor(game.floor / 5)
+			game.player.gold = game.player.gold + gold
+
+			local msg = "The explorer did not make it further. You find " .. gold .. " gold."
+
+			if love.math.random() < 0.40 then
+				Consumables.grant(game.player, "bandage")
+				msg = msg .. " A bandage is tucked in their pack."
+			end
+
+			if love.math.random() < 0.20 then
+				Artifacts.grant(game.player, "exploratoris_ephemeris")
+				msg = msg .. " Their journal survives."
+			end
+
+			return {message = msg}
+		end,
+	},
+
+	torn_satchel = {
+		cancel_index = 2,
+		message = "A torn satchel lies discarded in the shadows.",
+		options = {"Search", "Leave"},
+		resolve = function(game, event, choice)
+			if choice == 2 then
+				return {message = nil}
+			end
+
+			local gold = love.math.random(2, 4)
+			game.player.gold = game.player.gold + gold
+
+			local msg = "You find " .. gold .. " gold inside."
+
+			if love.math.random() < 0.35 then
+				Consumables.grant(game.player, "ration")
+				msg = msg .. " A ration remains."
+			end
+
+			return {message = msg}
+		end,
+	},
+
+	pilgrim_pack = {
+		cancel_index = 2,
+		message = "A weathered pack rests near the shrine. Pilgrim's belongings.",
+		options = {"Search", "Leave"},
+		resolve = function(game, event, choice)
+			if choice == 2 then
+				return {message = nil}
+			end
+
+			local gold = love.math.random(1, 3)
+			game.player.gold = game.player.gold + gold
+
+			local msg = "You find " .. gold .. " gold in the pack."
+
+			if love.math.random() < 0.50 then
+				Consumables.grant(game.player, "ration")
+				msg = msg .. " Rations, untouched."
+			end
+
+			if not Artifacts.has(game.player, "preces_fragmentum") then
+				Artifacts.grant(game.player, "preces_fragmentum")
+				msg = msg .. " Inside, a strip of parchment with faded words."
+			end
+
+			return {message = msg}
+		end,
+	},
+
+	hidden_cache = {
+		cancel_index = 2,
+		message = "You notice disturbed stonework. Something is hidden here.",
+		options = {"Investigate", "Leave"},
+		resolve = function(game, event, choice)
+			if choice == 2 then
+				return {message = nil}
+			end
+
+			local gold = love.math.random(8, 12)
+			game.player.gold = game.player.gold + gold
+
+			local msg = "You uncover a hidden cache with " .. gold .. " gold."
+
+			local rng = love.math.random()
+			if rng < 0.30 then
+				Consumables.grant(game.player, "bandage")
+				msg = msg .. " Bandages, preserved."
+			elseif rng < 0.50 then
+				Consumables.grant(game.player, "ration")
+				msg = msg .. " Rations, still sealed."
+			end
+
+			if love.math.random() < 0.25 then
+				Artifacts.grant(game.player, "sigillum_fractum")
+				msg = msg .. " A broken seal lies behind loose stonework."
+			end
+
+			return {message = msg}
+		end,
+	},
+
+	hidden_cache_scout = {
+		cancel_index = 2,
+		message = "You noticed disturbed stonework during the fight.",
+		options = {"Investigate", "Leave"},
+		resolve = function(game, event, choice)
+			if choice == 2 then
+				return {message = nil}
+			end
+
+			local gold = love.math.random(8, 12)
+			local tier = event.poi and event.poi.scout_tier or "read"
+			local mult = {
+				glimpse = 1,
+				read = 1,
+				understand = 1.5,
+				insight = 1.8,
+				revelation = 2,
+			}
+			gold = math.floor(gold * (mult[tier] or 1))
+			game.player.gold = game.player.gold + gold
+
+			local msg = "You uncover a hidden cache with " .. gold .. " gold."
+
+			local rng = love.math.random()
+			if rng < 0.35 then
+				Consumables.grant(game.player, "bandage")
+				msg = msg .. " Bandages inside."
+			elseif rng < 0.60 then
+				Consumables.grant(game.player, "ration")
+				msg = msg .. " Rations inside."
+			end
+
+			if love.math.random() < 0.20 then
+				Artifacts.grant(game.player, "sigillum_fractum")
+				msg = msg .. " A broken seal lies among the contents."
+			end
+
+			return {message = msg}
 		end,
 	},
 }

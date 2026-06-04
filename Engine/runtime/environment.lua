@@ -109,6 +109,8 @@ function M.populate(game, rooms, compositions, anomaly)
 		end
 	end
 
+	M.spawn_finds(game, rooms, anomaly)
+
 	M.tag_pois(game, rooms, anomaly)
 
 	-- Milestone post-processing
@@ -141,6 +143,64 @@ function M.populate(game, rooms, compositions, anomaly)
 
 	if game.floor == 20 then
 		HeartBelow.setup(game)
+	end
+end
+
+function M.spawn_finds(game, rooms, anomaly)
+	local silent = anomaly
+		and (anomaly.type == "silent"
+			or anomaly.type == "dead")
+
+	if silent then
+		return
+	end
+
+	for _, room in ipairs(rooms) do
+		if room.type ~= "threshold" then
+			local roll = love.math.random()
+
+			if roll < 0.05 then
+				Discovery.spawn(game, room, {
+					type = "fallen_explorer",
+					action = "Search",
+					event_type = "fallen_explorer",
+					inspect = "The explorer did not make it further.",
+					tags = {"remains"},
+				})
+			elseif roll < 0.12 then
+				Discovery.spawn(game, room, {
+					type = "torn_satchel",
+					action = "Search",
+					event_type = "torn_satchel",
+					inspect = "A weathered pack. Something glints inside.",
+					tags = {"treasure"},
+				})
+			end
+		end
+	end
+
+	for _, room in ipairs(rooms) do
+		if room.type == "shrine" and love.math.random() < 0.15 then
+			Discovery.spawn(game, room, {
+				type = "pilgrim_pack",
+				action = "Search",
+				event_type = "pilgrim_pack",
+				inspect = "A pilgrim's pack, untouched for years.",
+				tags = {"treasure"},
+			})
+		end
+	end
+
+	for _, room in ipairs(rooms) do
+		if room.landmark and love.math.random() < 0.02 then
+			Discovery.spawn(game, room, {
+				type = "hidden_cache",
+				action = "Search",
+				event_type = "hidden_cache",
+				inspect = "The stonework is disturbed. Something is hidden here.",
+				tags = {"treasure"},
+			})
+		end
 	end
 end
 

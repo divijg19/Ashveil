@@ -49,7 +49,11 @@ function love.update(dt)
 	local key = love_input.get_key()
 	local action = nil
 
-	if game.show_character then
+	if key == "1" then
+		action = "1"
+	elseif key == "2" then
+		action = "2"
+	elseif game.show_character then
 		action = character_input.get_action(key)
 
 	elseif game.show_pause then

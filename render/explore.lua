@@ -318,6 +318,86 @@ function M.draw(state)
 
 				4
 			)
+
+		elseif item.prop.type == "fallen_explorer" then
+			love.graphics.setColor(0.4, 0.35, 0.3, 0.85)
+			-- slumped body
+			love.graphics.rectangle(
+				"fill",
+
+				sx - 4,
+				sy - 10,
+
+				8,
+				16
+			)
+			-- head slumped to side
+			love.graphics.rectangle(
+				"fill",
+
+				sx - 8,
+				sy - 16,
+
+				8,
+				8
+			)
+
+		elseif item.prop.type == "torn_satchel" then
+			love.graphics.setColor(0.5, 0.4, 0.25, 0.8)
+			-- tilted rectangle
+			love.graphics.polygon(
+				"fill",
+
+				sx - 6,
+				sy + 2,
+
+				sx + 4,
+				sy + 6,
+
+				sx + 8,
+				sy - 4,
+
+				sx - 2,
+				sy - 8
+			)
+
+		elseif item.prop.type == "pilgrim_pack" then
+			love.graphics.setColor(0.45, 0.35, 0.25, 0.8)
+			-- bundle
+			love.graphics.rectangle(
+				"fill",
+
+				sx - 5,
+				sy - 4,
+
+				10,
+				12
+			)
+			-- staff
+			love.graphics.setColor(0.5, 0.4, 0.3, 0.8)
+			love.graphics.rectangle(
+				"fill",
+
+				sx + 6,
+				sy - 18,
+
+				3,
+				26
+			)
+
+		elseif item.prop.type == "hidden_cache" then
+			-- faint floor mark — barely visible
+			love.graphics.setColor(0.25, 0.25, 0.22, 0.35)
+			love.graphics.rectangle(
+				"fill",
+
+				sx - 5,
+				sy - 3,
+
+				10,
+				6
+			)
+			love.graphics.setColor(1, 1, 1, 1)
 		end
 
 		elseif item.type == "exit" then
