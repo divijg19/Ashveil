@@ -46,8 +46,9 @@ local function trial_resolve(game, event, choice)
 				b = 2
 			end
 			g.player.stats[stat] = g.player.stats[stat] + b
+			Reward.veil_shards(g.player, 1)
 			e.done = true
-			return {message = ("You feel transformed. +%d %s."):format(
+			return {message = ("You feel transformed. +%d %s.\nA Veil Shard resonates within the seal."):format(
 				b, stat:gsub("^%l", string.upper)
 			), completed = true}
 		end
@@ -451,8 +452,9 @@ local EVENT_DEFS = {
 
 			local msg = "The explorer did not make it further. " .. gold_msg
 
-			Artifacts.grant(game.player, "broken_compass", game.floor, game.current_region.name, "Fallen Explorer")
-			msg = msg .. " A broken compass lies beside them."
+			if Artifacts.grant(game.player, "broken_compass", game.floor, game.current_region.name, "Fallen Explorer") then
+				msg = msg .. " A broken compass lies beside them."
+			end
 
 			if love.math.random() < 0.40 then
 				Consumables.grant(game.player, "bandage")
@@ -460,8 +462,9 @@ local EVENT_DEFS = {
 			end
 
 			if love.math.random() < 0.20 then
-				Artifacts.grant(game.player, "exploratoris_ephemeris", game.floor, game.current_region.name, "Fallen Explorer")
-				msg = msg .. " Their journal survives."
+				if Artifacts.grant(game.player, "exploratoris_ephemeris", game.floor, game.current_region.name, "Fallen Explorer") then
+					msg = msg .. " Their journal survives."
+				end
 			end
 
 			return {message = msg}
@@ -533,8 +536,9 @@ local EVENT_DEFS = {
 
 			local msg = gold_msg
 
-			Artifacts.grant(game.player, "melted_coin", game.floor, game.current_region.name, "Hidden Cache")
-			msg = msg .. " A melted coin is among the contents."
+			if Artifacts.grant(game.player, "melted_coin", game.floor, game.current_region.name, "Hidden Cache") then
+				msg = msg .. " A melted coin is among the contents."
+			end
 
 			local rng = love.math.random()
 			if rng < 0.30 then
@@ -546,8 +550,9 @@ local EVENT_DEFS = {
 			end
 
 			if love.math.random() < 0.25 then
-				Artifacts.grant(game.player, "sigillum_fractum", game.floor, game.current_region.name, "Hidden Cache")
-				msg = msg .. " A broken seal lies behind loose stonework."
+				if Artifacts.grant(game.player, "sigillum_fractum", game.floor, game.current_region.name, "Hidden Cache") then
+					msg = msg .. " A broken seal lies behind loose stonework."
+				end
 			end
 
 			return {message = msg}
@@ -599,8 +604,9 @@ local EVENT_DEFS = {
 
 			local msg = gold_msg
 
-			Artifacts.grant(game.player, "melted_coin", game.floor, game.current_region.name, "Hidden Cache")
-			msg = msg .. " A melted coin is among the contents."
+			if Artifacts.grant(game.player, "melted_coin", game.floor, game.current_region.name, "Hidden Cache") then
+				msg = msg .. " A melted coin is among the contents."
+			end
 
 			local rng = love.math.random()
 			if rng < 0.35 then
@@ -612,10 +618,81 @@ local EVENT_DEFS = {
 			end
 
 			if love.math.random() < 0.20 then
-				Artifacts.grant(game.player, "sigillum_fractum", game.floor, game.current_region.name, "Hidden Cache")
-				msg = msg .. " A broken seal lies among the contents."
+				if Artifacts.grant(game.player, "sigillum_fractum", game.floor, game.current_region.name, "Hidden Cache") then
+					msg = msg .. " A broken seal lies among the contents."
+				end
 			end
 
+			return {message = msg}
+		end,
+	},
+
+	corpse_loot = {
+		cancel_index = 2,
+		message = "Search the remains?",
+		options = {"Search", "Leave"},
+		resolve = function(game, event, choice)
+			if choice == 2 then
+				return {message = nil}
+			end
+
+			local prop = event.poi
+			local loot = prop.loot or {}
+			local items = {}
+
+			if loot.gold and loot.gold > 0 then
+				game.player.gold = game.player.gold + loot.gold
+				table.insert(items, loot.gold .. " gold")
+			end
+
+			if loot.veil_shards and loot.veil_shards > 0 then
+				game.player.veil_shards =
+					(game.player.veil_shards or 0) + loot.veil_shards
+				local label = loot.veil_shards == 1
+					and "Veil Shard"
+					or "Veil Shards"
+				table.insert(items, loot.veil_shards .. " " .. label)
+			end
+
+			if loot.consumables then
+				local names = {
+					bandage = "Bandage",
+					ration = "Ration",
+				}
+				for _, item in ipairs(loot.consumables) do
+					Consumables.grant(game.player, item)
+					table.insert(items, names[item] or item)
+				end
+			end
+
+			if loot.relics then
+				for _, relic_id in ipairs(loot.relics) do
+					Relics.grant(game.player, relic_id)
+				end
+			end
+
+			if loot.artifacts then
+				for _, art in ipairs(loot.artifacts) do
+					Artifacts.grant(
+						game.player,
+						art.id,
+						art.floor,
+						art.region,
+						art.source
+					)
+				end
+			end
+
+			if loot.relic_msg then
+				MessagePanel.push_passive(loot.relic_msg)
+			end
+			if loot.sentinel_msg then
+				MessagePanel.push_passive(loot.sentinel_msg)
+			end
+
+			local msg = #items > 0
+				and table.concat(items, ", ") .. "."
+				or "Nothing of value remains."
 			return {message = msg}
 		end,
 	},

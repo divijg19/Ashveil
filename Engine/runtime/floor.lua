@@ -13,6 +13,11 @@ local MessagePanel =
 		"Engine.runtime.message_panel"
 	)
 
+local Reward =
+	require(
+		"Engine.runtime.rewards"
+	)
+
 local M = {}
 
 function M.next(
@@ -75,6 +80,7 @@ function M.next(
 		rooms[1]
 
 	if not spawn_room then
+		game.current_region = Regions.for_floor(game.floor)
 		return
 	end
 
@@ -114,6 +120,16 @@ function M.next(
 		MessagePanel.push(
 			new_region.desc
 		)
+
+		if new_region.milestone then
+			local shards = new_region.floor <= 10 and 2 or 1
+			Reward.veil_shards(game.player, shards)
+			MessagePanel.push_passive(
+				"Veil Shards resonate as you cross into the "
+					.. new_region.name
+					.. "."
+			)
+		end
 	end
 
 	game.current_region = new_region

@@ -4,3 +4,4 @@ dist/
 save/
 .DS_Store
 
+luac.out

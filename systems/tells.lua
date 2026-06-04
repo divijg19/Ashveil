@@ -1,5 +1,10 @@
 local M = {}
 
+local DEFAULT_TELL = {
+	text = "The enemy stirs.",
+	hints = {"attack"},
+}
+
 local TELLS = {
 	brute = {
 		{
@@ -96,7 +101,7 @@ local TELLS = {
 function M.select_tell(archetype, intent)
 	local pool = TELLS[archetype]
 	if not pool then
-		return {text = "The enemy stirs.", hints = {"attack"}}
+		return DEFAULT_TELL
 	end
 
 	local candidates = {}
@@ -110,7 +115,7 @@ function M.select_tell(archetype, intent)
 	end
 
 	if #candidates == 0 then
-		return {text = "The enemy stirs.", hints = {"attack"}}
+		return DEFAULT_TELL
 	end
 
 	return candidates[love.math.random(#candidates)]

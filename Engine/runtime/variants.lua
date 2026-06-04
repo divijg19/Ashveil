@@ -27,6 +27,15 @@ local VARIANTS = {
 	},
 }
 
+local VARIANT_IDS
+do
+	local ids = {}
+	for id in pairs(VARIANTS) do
+		table.insert(ids, id)
+	end
+	VARIANT_IDS = ids
+end
+
 function M.def(variant_id)
 	return VARIANTS[variant_id]
 end
@@ -46,11 +55,7 @@ function M.roll_variant(floor)
 	end
 
 	if love.math.random() < chance then
-		local ids = {}
-		for id in pairs(VARIANTS) do
-			table.insert(ids, id)
-		end
-		return ids[love.math.random(#ids)]
+		return VARIANT_IDS[love.math.random(#VARIANT_IDS)]
 	end
 
 	return nil

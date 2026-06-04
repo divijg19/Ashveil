@@ -28,7 +28,6 @@ function M.setup(game, room)
 			tags = {"curiosity"},
 			interaction = {
 				action = "Inspect",
-				event_type = nil,
 			},
 			inspect = "The Veil shudders when you speak. This place remembers.",
 		},

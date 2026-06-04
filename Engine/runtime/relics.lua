@@ -70,8 +70,6 @@ function M.grant(player, id)
 		return false
 	end
 
-	player.relics[id] = true
-
 	local def = RELIC_DEFS[id]
 	if def.apply then
 		def.apply(player)
@@ -81,6 +79,8 @@ function M.grant(player, id)
 		hook(player, id)
 	end
 
+	player.relics[id] = true
+
 	MessagePanel.push_passive(
 		"New Relic: " .. (def and def.name or id)
 	)
@@ -89,6 +89,9 @@ function M.grant(player, id)
 end
 
 function M.has(player, id)
+	if not player or not player.relics then
+		return false
+	end
 	return player.relics[id] == true
 end
 
@@ -101,6 +104,10 @@ function M.count(player)
 end
 
 function M.random_unowned(player)
+	if not player or not player.relics then
+		return nil
+	end
+
 	local pool = {}
 
 	for _, id in ipairs(AVAILABLE_IDS) do

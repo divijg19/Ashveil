@@ -1,7 +1,5 @@
--- DEPRECATED: old exploration-damage system (systems/combat.lua) has been
--- replaced by full encounter combat. If an enemy reaches the player during
--- world_turn, it now triggers a combat encounter rather than dealing 1 damage.
--- See systems/combat.lua (header) for the deprecated implementation.
+-- Enemy AI: moves enemies toward the player during world_tick.
+-- When an enemy reaches the player tile, triggers a full combat encounter.
 
 local movement = require("systems.movement")
 

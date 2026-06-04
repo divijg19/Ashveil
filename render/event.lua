@@ -43,7 +43,8 @@ function M.draw(state)
 	-- options
 	local option_start_y = py + 85
 
-	for i, opt in ipairs(ev.options) do
+	local options = ev.options or {}
+	for i, opt in ipairs(options) do
 		local y = option_start_y + (i - 1) * 30
 
 		if ev.selection == i then

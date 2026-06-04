@@ -32,7 +32,7 @@ function M.draw(state)
 
 		love.graphics.printf(
 			"~ Floor "
-				.. data.next_floor
+				.. (data.next_floor or "?")
 				.. " ~",
 			ox,
 			h / 2 - 30,

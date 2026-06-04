@@ -37,20 +37,20 @@ function M.populate(game, rooms, compositions, anomaly)
 				archetype
 			)
 
-			-- Variant roll for non-sentinel enemies
-			if archetype ~= "sentinel" then
-				local last = game.enemies[#game.enemies]
-				if last then
-					local variant_id =
-						Variants.roll_variant(
-							game.floor
-						)
-					if variant_id then
-						last.variant = variant_id
-					end
-				end
+		-- Variant roll for non-sentinel enemies
+		local last = game.enemies[#game.enemies]
+		if last
+			and last.archetype ~= "sentinel"
+		then
+			local variant_id =
+				Variants.roll_variant(
+					game.floor
+				)
+			if variant_id then
+				last.variant = variant_id
 			end
 		end
+	end
 	end
 
 	local is_echo = anomaly

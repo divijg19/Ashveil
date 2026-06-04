@@ -1,6 +1,8 @@
 local M = {}
 
 function M.update(game, action, dt)
+	if not game.scene then return end
+
 	if game.scene:is("explore") then
 		game:update_explore(action)
 

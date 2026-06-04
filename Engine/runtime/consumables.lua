@@ -30,15 +30,22 @@ function M.def(id)
 end
 
 function M.grant(player, id, count)
-	count = count or 1
+	if not player or not player.inventory or not player.inventory.consumables then return false end
+	count = math.max(count or 1, 0)
 	player.inventory.consumables[id] = (player.inventory.consumables[id] or 0) + count
 end
 
 function M.has(player, id)
+	if not player or not player.inventory or not player.inventory.consumables then
+		return false
+	end
 	return (player.inventory.consumables[id] or 0) > 0
 end
 
 function M.count(player, id)
+	if not player or not player.inventory then
+		return 0
+	end
 	return player.inventory.consumables[id] or 0
 end
 

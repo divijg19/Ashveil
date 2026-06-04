@@ -8,6 +8,7 @@ local explore_input = require("input.explore")
 local combat_input = require("input.combat")
 local event_input = require("input.event")
 local character_input = require("input.character")
+local inventory_input = require("input.inventory")
 local pause_input = require("input.pause")
 
 local renderer = require("render.love")
@@ -24,7 +25,8 @@ function love.update(dt)
 	-- 3. Message Panel
 	-- 4. Character Sheet
 	-- 5. Pause Menu
-	-- 6. Scene Input
+	-- 6. Consumable Hotkeys (1/2)
+	-- 7. Scene Input
 
 	-- transitions update continuously (no player input)
 	if game.scene:is("transition") then
@@ -51,6 +53,9 @@ function love.update(dt)
 
 	if game.show_character then
 		action = character_input.get_action(key)
+
+	elseif game.show_inventory then
+		action = inventory_input.get_action(key)
 
 	elseif game.show_pause then
 		action = pause_input.get_action(key)

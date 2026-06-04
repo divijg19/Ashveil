@@ -10,6 +10,13 @@ local SCOUT_COLORS = {
 	revelation = {0.6, 0.85, 0.85, 1},
 }
 
+-- stance colors (module-level constant)
+local STANCE_COLOR_MAP = {
+	aggressive = {0.85, 0.55, 0.45},
+	guarded = {0.5, 0.7, 0.85},
+	focused = {0.85, 0.8, 0.5},
+}
+
 function M.draw(state)
 	local c = state.combat
 	if not c or not c.enemy then
@@ -30,7 +37,7 @@ function M.draw(state)
 		or c.enemy.archetype:gsub("^%l", string.upper)
 
 	-- Display max (variant hp_mod and fury +2 are baked into max_hp)
-	local display_max = c.enemy.max_hp
+	local display_max = math.max(c.enemy.max_hp or 5, 1)
 
 	-- Combat header
 	love.graphics.setColor(0.6, 0.55, 0.5, 0.25)
@@ -120,7 +127,7 @@ function M.draw(state)
 	-- Damage feedback
 	if c.damage_feedback and c.damage_feedback.timer > 0 then
 		local df = c.damage_feedback
-		local is_heal = df.text:sub(1, 1) == "+"
+		local is_heal = (df.text or ""):sub(1, 1) == "+"
 		love.graphics.setColor(
 			is_heal and 0.5 or 1,
 			is_heal and 1 or 0.5,
@@ -226,30 +233,32 @@ function M.draw(state)
 	love.graphics.print("You", lx, ry)
 	ry = ry + 16
 
-	local pv = state.player.stats.vitality or 0
-	local pmv = state.player.max_vitality or 10
-	love.graphics.setColor(0.75, 0.75, 0.75, 1)
-	love.graphics.print("Vitality: " .. pv .. " / " .. pmv, lx, ry)
+	local p = state.player
+	if not p or not p.stats then
+		ry = ry + 22
+	else
+		local pv = p.stats.vitality or 0
+		local pmv = state.player.max_vitality or 10
+		love.graphics.setColor(0.75, 0.75, 0.75, 1)
+		love.graphics.print("Vitality: " .. pv .. " / " .. pmv, lx, ry)
 
-	local stance = state.player.stance or "guarded"
-	local stance_color = stance == "aggressive" and {0.85, 0.55, 0.45}
-		or stance == "guarded" and {0.5, 0.7, 0.85}
-		or {0.85, 0.8, 0.5}
-	love.graphics.setColor(stance_color)
-	love.graphics.print(
-		"Stance: " .. stance:gsub("^%l", string.upper),
-		lx + 140,
-		ry
-	)
-	ry = ry + 22
+		local stance = p.stance or "guarded"
+		local stance_color = STANCE_COLOR_MAP[stance] or {0.85, 0.8, 0.5}
+		love.graphics.setColor(stance_color)
+		love.graphics.print(
+			"Stance: " .. stance:gsub("^%l", string.upper),
+			lx + 140,
+			ry
+		)
+		ry = ry + 22
+	end
 
 	-- ── Observed Facts ──
 	if state.player and state.player.knowledge then
 		local facts = {}
-		if state.player.knowledge[c.enemy.archetype] then
-			for key, fact in pairs(
-				state.player.knowledge[c.enemy.archetype].facts
-			) do
+		local ek = state.player.knowledge[c.enemy.archetype]
+		if ek and ek.facts then
+			for key, fact in pairs(ek.facts) do
 				if fact.discovered then
 					table.insert(facts, fact.text)
 				end

@@ -66,15 +66,17 @@ function M.build(state)
 	end
 
 	-- exit
-	table.insert(queue, {
-		type = "exit",
-		x = state.exit.x,
-		y = state.exit.y,
-		depth =
-			state.exit.x +
-			state.exit.y +
-			DEPTH_OFFSET.stairs
-	})
+	if state.exit then
+		table.insert(queue, {
+			type = "exit",
+			x = state.exit.x,
+			y = state.exit.y,
+			depth =
+				state.exit.x +
+				state.exit.y +
+				DEPTH_OFFSET.stairs
+		})
+	end
 
 	-- enemies
 	for _, e in ipairs(state.enemies or {}) do
@@ -90,17 +92,19 @@ function M.build(state)
 	end
 
 	-- player
-	table.insert(queue, {
-		type = "player",
+	if state.player then
+		table.insert(queue, {
+			type = "player",
 
-		x = state.player.x,
-		y = state.player.y,
+			x = state.player.x,
+			y = state.player.y,
 
-		depth =
-			state.player.x
-			+ state.player.y
-			+ DEPTH_OFFSET.player
-	})
+			depth =
+				state.player.x
+				+ state.player.y
+				+ DEPTH_OFFSET.player
+		})
+	end
 
 	return queue
 end

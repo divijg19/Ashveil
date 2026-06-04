@@ -1,3 +1,5 @@
+local MessagePanel = require("Engine.runtime.message_panel")
+
 local M = {}
 
 function M.vitality(player, amount)
@@ -10,6 +12,9 @@ function M.vitality(player, amount)
 end
 
 function M.blessing(player, name)
+	if not player.blessings then
+		player.blessings = {}
+	end
 	table.insert(player.blessings, name)
 end
 
@@ -32,6 +37,22 @@ local GOLD_MESSAGES = {
 function M.gold(player, amount, source)
 	player.gold = player.gold + amount
 	return GOLD_MESSAGES[source] or "You find " .. amount .. " gold."
+end
+
+function M.veil_shards(player, amount)
+	player.veil_shards = (player.veil_shards or 0) + amount
+end
+
+function M.present_loot(items)
+	if not items or #items == 0 then
+		return
+	end
+
+	local lines = {"Loot Recovered:"}
+	for _, item in ipairs(items) do
+		table.insert(lines, "  • " .. item)
+	end
+	MessagePanel.push_passive(table.concat(lines, "\n"))
 end
 
 return M
