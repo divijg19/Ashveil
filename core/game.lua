@@ -15,11 +15,9 @@ local Events = require("Engine.runtime.events")
 local POI = require("Engine.runtime.poi")
 local Inspection = require("Engine.runtime.inspection")
 local Relics = require("Engine.runtime.relics")
-local Artifacts = require("Engine.runtime.artifacts")
 local Consumables = require("Engine.runtime.consumables")
 local Regions = require("Engine.runtime.regions")
 local Variants = require("Engine.runtime.variants")
-local Reward = require("Engine.runtime.rewards")
 local Intent = require("systems.intent")
 local Tells = require("systems.tells")
 local Dice = require("systems.dice")
@@ -31,6 +29,8 @@ local movement = require("systems.movement")
 local ai = require("systems.ai")
 
 local Game = {}
+
+local INITIAL_FLOOR = 1
 
 function Game:new()
 	local echo_memories = {}
@@ -47,7 +47,7 @@ function Game:new()
 
 		echo_memories = echo_memories,
 
-		floor = 1,
+		floor = INITIAL_FLOOR,
 
 		player = {
 			x = spawn.x,
@@ -67,6 +67,11 @@ function Game:new()
 				key_items = {},
 			},
 			gold = 0,
+			veil_shards = 0,
+			equipment = {
+				weapon = nil,
+				charm = nil,
+			},
 			max_vitality = 10,
 			stance = "guarded",
 			floor_heal_used = false,
@@ -98,13 +103,15 @@ function Game:new()
 
 		log = "",
 
-		current_region = Regions.for_floor(1),
+		current_region = Regions.for_floor(INITIAL_FLOOR),
 
 		seen_regions = {},
 
 		is_game_over = false,
 
 		show_character = false,
+
+		show_inventory = false,
 
 		show_pause = false,
 
@@ -121,6 +128,8 @@ function Game:new()
 
 	setmetatable(obj, self)
 	self.__index = self
+
+	obj.camera:center_on(obj.player.x, obj.player.y)
 
 	MessagePanel.push(
 		"Welcome to Ashveil."
@@ -159,6 +168,11 @@ function Game:update(action, dt)
 		return
 	elseif action == "2" then
 		self:use_consumable("ration")
+		return
+	end
+
+	if self.show_inventory then
+		self:update_inventory(action)
 		return
 	end
 
@@ -212,13 +226,21 @@ function Game:update_explore(action)
 
 	if action == "character" then
 		self.show_character = true
+		self.show_inventory = false
 		self.character_sheet.selection = 1
+		return
+	end
+
+	if action == "inventory" then
+		self.show_inventory = not self.show_inventory
+		self.show_character = false
 		return
 	end
 
 	self:player_turn(action)
 	self:world_turn()
 	self.nearby_poi = POI.near(self)
+	self.camera:center_on(self.player.x, self.player.y)
 end
 
 function Game:update_character(action)
@@ -246,6 +268,16 @@ function Game:update_character(action)
 		self.player.stance = stances[
 			self.character_sheet.selection
 		]
+	end
+end
+
+function Game:update_inventory(action)
+	if not action then
+		return
+	end
+
+	if action == "close" then
+		self.show_inventory = false
 	end
 end
 
@@ -390,6 +422,8 @@ function Game:update_transition(dt)
 				self.anomaly
 			)
 
+			self.camera:center_on(self.player.x, self.player.y)
+
 			MessagePanel.push(
 				data.msg
 			)
@@ -439,7 +473,7 @@ function Game:update_combat(action, dt)
 
 	-- Turn start: select intent and tell
 	if not c.enemy_intent then
-		local arch = c.enemy.archetype
+		local arch = c.enemy.archetype or "unknown"
 		local variant_tendency = nil
 		if c.variant then
 			local vdef = Variants.def(c.variant)
@@ -467,7 +501,7 @@ function Game:update_combat(action, dt)
 		return
 	end
 
-	local ename = c.enemy.archetype:gsub("^%l", string.upper)
+	local ename = (c.enemy.archetype or "unknown"):gsub("^%l", string.upper)
 
 	if action == "attack" then
 		-- Player deals damage
@@ -645,7 +679,7 @@ function Game:_get_validation(c)
 end
 
 function Game:_process_enemy_turn(c)
-	local ename = c.enemy.archetype:gsub("^%l", string.upper)
+	local ename = (c.enemy.archetype or "unknown"):gsub("^%l", string.upper)
 	local base = Intent.intent_damage(
 		c.enemy_intent,
 		c.enemy.archetype
@@ -748,7 +782,7 @@ function Game:exit_combat(player_won)
 	-- Scout-revealed hidden cache: spawn after combat
 	if player_won and c._scout_found_stash then
 		table.insert(self.props, {
-			x = self.player.x + 1,
+			x = self.player.x - 1,
 			y = self.player.y,
 			type = "hidden_cache",
 			poi = {
@@ -852,58 +886,94 @@ function Game:exit_combat(player_won)
 		end
 	end
 
-	-- Elite variant relic chance (5%)
-	if c.variant and player_won then
+	-- Build corpse loot from combat rewards
+	local corpse_loot = {}
+	local ename = c.enemy and c.enemy.display_name or "enemy"
+
+	-- Base gold by archetype
+	local arch_gold = { brute = 2, stalker = 3, watcher = 2, fanatic = 2 }
+	local gold = arch_gold[c.enemy and c.enemy.archetype] or 2
+	if gold > 0 then
+		corpse_loot.gold = gold + love.math.random(0, 1)
+	end
+
+	-- Consumable chance
+	if love.math.random() < 0.25 then
+		corpse_loot.consumables = {"bandage"}
+	end
+	if c.enemy and c.enemy.archetype == "fanatic" and love.math.random() < 0.5 then
+		corpse_loot.consumables = corpse_loot.consumables or {}
+		table.insert(corpse_loot.consumables, "ration")
+	end
+
+	-- Variant bonuses
+	if c.variant then
+		corpse_loot.veil_shards = (corpse_loot.veil_shards or 0) + love.math.random(1, 2)
+		corpse_loot.gold = (corpse_loot.gold or 0) + 1
 		if love.math.random() < 0.05 then
 			local relic_id = Relics.random_unowned(self.player)
 			if relic_id then
-				Relics.grant(self.player, relic_id)
+				corpse_loot.relics = {relic_id}
 				local vdef = Variants.def(c.variant)
-				MessagePanel.push(
-					"The "
-						.. (vdef and vdef.name or "elite")
-						.. " carried a relic."
-				)
+				corpse_loot.relic_msg = "The "
+					.. (vdef and vdef.name or "elite")
+					.. " carried a relic."
 			end
 		end
 	end
 
-	-- Sentinel: relic or gold cache
+	-- Sentinel rewards
 	if c.enemy
 		and c.enemy.archetype == "sentinel"
-		and player_won
 	then
 		if love.math.random() < 0.50 then
 			local relic_id = Relics.random_unowned(self.player)
 			if relic_id then
-				Relics.grant(self.player, relic_id)
-				MessagePanel.push(
-					"The sentinel's remains yield a relic."
-				)
+				corpse_loot.relics = corpse_loot.relics or {}
+				table.insert(corpse_loot.relics, relic_id)
+				corpse_loot.sentinel_msg = "The sentinel's remains yield a relic."
 			else
-				local gold_msg = Reward.gold(self.player, 10, "sentinel_consolation")
-				MessagePanel.push(gold_msg)
+				corpse_loot.gold = (corpse_loot.gold or 0) + 10
+				corpse_loot.sentinel_msg = "Scattered gold surrounds the sentinel's remains."
 			end
 		else
-			local gold_msg = Reward.gold(self.player, 12, "sentinel_cache")
-			MessagePanel.push(gold_msg)
+			corpse_loot.gold = (corpse_loot.gold or 0) + 12
+			corpse_loot.sentinel_msg = "A cache of gold survives beneath the sentinel's chamber."
+		end
+
+		corpse_loot.veil_shards = (corpse_loot.veil_shards or 0) + 2
+
+		if self.player.discovery_flags.mark_recognized
+			and not self.player.discovery_flags.mark_complete
+		then
+			self.player.discovery_flags.mark_complete = true
+			corpse_loot.artifacts = corpse_loot.artifacts or {}
+			table.insert(corpse_loot.artifacts, {
+				id = "messorem_cinis",
+				floor = self.floor,
+				region = self.current_region.name,
+				source = "Echo Chamber",
+			})
 		end
 	end
 
-	-- Mark of Ash: check completion after sentinel defeat
-	if c
-		and c.enemy
-		and c.enemy.archetype == "sentinel"
-		and player_won
-		and self.player.discovery_flags.mark_recognized
-		and not self.player.discovery_flags.mark_complete
-	then
-		self.player.discovery_flags.mark_complete = true
-		Artifacts.grant(self.player, "messorem_cinis", self.floor, self.current_region.name, "Echo Chamber")
-		MessagePanel.push(
-			"The Echo Chamber bears the Mark of Ash. You understand now.\nA fragment of charcoal-black stone rests among the echoes."
-		)
-	end
+	-- Spawn corpse prop
+	table.insert(self.props, {
+		x = self.player.x + 1,
+		y = self.player.y,
+		type = "corpse",
+		poi = {
+			state = "active",
+			tags = {"corpse"},
+			interaction = {
+				action = "Search",
+				event_type = "corpse_loot",
+			},
+			inspect = "The remains of " .. ename .. ".",
+		},
+		loot = corpse_loot,
+		enemy_name = ename,
+	})
 end
 
 -- =========================
@@ -1048,16 +1118,20 @@ function Game:update_event(action)
 	end
 
 	if action == "up" then
-		ev.selection = math.max(
-			1,
-			ev.selection - 1
-		)
+		if ev.selection then
+			ev.selection = math.max(
+				1,
+				ev.selection - 1
+			)
+		end
 
 	elseif action == "down" then
-		ev.selection = math.min(
-			#ev.options,
-			ev.selection + 1
-		)
+		if ev.selection and ev.options then
+			ev.selection = math.min(
+				#ev.options,
+				ev.selection + 1
+			)
+		end
 
 	elseif action == "confirm" then
 		Events.resolve(self, ev, ev.selection)
@@ -1072,47 +1146,34 @@ end
 -- DRAW STATE
 -- =========================
 
+local _draw_cache = {}
+
 function Game:get_draw_data()
-	return {
-		map = self.map,
-		rooms = self.rooms,
-		exit = self.exit,
-		floor = self.floor,
-
-		player = self.player,
-		enemies = self.enemies,
-		props = self.props,
-
-		camera = self.camera,
-
-		combat = self.combat,
-
-		transition = self.transition,
-
-		event = self.event,
-
-		nearby_poi = self.nearby_poi,
-
-		active_poi = self.active_poi,
-
-		anomaly = self.anomaly,
-
-		message_panel = MessagePanel,
-
-		log = self.log,
-
-		scene = self.scene,
-
-		is_game_over = self.is_game_over,
-
-		show_character = self.show_character,
-
-		show_pause = self.show_pause,
-
-		character_sheet = self.character_sheet,
-
-		wound_anomaly_active = self.wound_anomaly_active,
-	}
+	local d = _draw_cache
+	d.map = self.map
+	d.rooms = self.rooms
+	d.exit = self.exit
+	d.floor = self.floor
+	d.player = self.player
+	d.show_inventory = self.show_inventory
+	d.enemies = self.enemies
+	d.props = self.props
+	d.camera = self.camera
+	d.combat = self.combat
+	d.transition = self.transition
+	d.event = self.event
+	d.nearby_poi = self.nearby_poi
+	d.active_poi = self.active_poi
+	d.anomaly = self.anomaly
+	d.message_panel = MessagePanel
+	d.log = self.log
+	d.scene = self.scene
+	d.is_game_over = self.is_game_over
+	d.show_character = self.show_character
+	d.show_pause = self.show_pause
+	d.character_sheet = self.character_sheet
+	d.wound_anomaly_active = self.wound_anomaly_active
+	return d
 end
 
 return Game

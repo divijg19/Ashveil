@@ -6,6 +6,44 @@ local Iso =
 
 local M = {}
 
+local HALF_TILE_W = Iso.TILE_WIDTH / 2
+local HALF_TILE_H = Iso.TILE_HEIGHT / 2
+
+local _cam_sx, _cam_sy, _cx, _cy, _sw, _sh
+
+local sort_by_depth = function(a, b)
+	return a.depth < b.depth
+end
+
+local function world_to_camera(x, y)
+	local sx, sy = Iso.to_screen(x, y)
+	return sx - _cam_sx + _cx, sy - _cam_sy + _cy
+end
+
+local function draw_floor(x, y)
+	local sx, sy = world_to_camera(x, y)
+
+	love.graphics.polygon(
+		"line",
+		sx, sy,
+		sx + HALF_TILE_W, sy + HALF_TILE_H,
+		sx, sy + Iso.TILE_HEIGHT,
+		sx - HALF_TILE_W, sy + HALF_TILE_H
+	)
+end
+
+local function draw_wall(x, y)
+	local sx, sy = world_to_camera(x, y)
+
+	love.graphics.polygon(
+		"fill",
+		sx, sy,
+		sx + HALF_TILE_W, sy + HALF_TILE_H,
+		sx, sy + Iso.TILE_HEIGHT,
+		sx - HALF_TILE_W, sy + HALF_TILE_H
+	)
+end
+
 local PROP_RENDERERS = {
 	pillar = function(sx, sy)
 		love.graphics.rectangle("fill", sx - 6, sy - 18, 12, 24)
@@ -119,92 +157,36 @@ local PROP_RENDERERS = {
 	end,
 }
 
-local function get_screen_center()
-	local w = love.graphics.getWidth()
-	local h = love.graphics.getHeight()
-
-	-- slightly below center feels better
-	return w / 2, h / 3
-end
-
--- ========================================
--- Helpers
--- ========================================
-
-local function world_to_camera(state, x, y)
-	local sx, sy =
-		Iso.to_screen(x, y)
-
-	local cam_sx, cam_sy =
-		Iso.to_screen(
-			state.camera.x,
-			state.camera.y
-		)
-
-	local cx, cy = get_screen_center()
-
-	return
-		sx - cam_sx + cx,
-		sy - cam_sy + cy
-end
-
-local function draw_floor(state, x, y)
-	local sx, sy = world_to_camera(state, x, y)
-
-	love.graphics.polygon(
-		"line",
-		sx, sy,
-		sx + Iso.TILE_WIDTH / 2, sy + Iso.TILE_HEIGHT / 2,
-		sx, sy + Iso.TILE_HEIGHT,
-		sx - Iso.TILE_WIDTH / 2, sy + Iso.TILE_HEIGHT / 2
-	)
-end
-
-local function draw_wall(state, x, y)
-	local sx, sy = world_to_camera(state, x, y)
-
-	love.graphics.polygon(
-		"fill",
-		sx, sy,
-		sx + Iso.TILE_WIDTH / 2, sy + Iso.TILE_HEIGHT / 2,
-		sx, sy + Iso.TILE_HEIGHT,
-		sx - Iso.TILE_WIDTH / 2, sy + Iso.TILE_HEIGHT / 2
-	)
-end
-
 -- ========================================
 -- Main Draw
 -- ========================================
 
 function M.draw(state)
-	-- ensure full color for world
 	love.graphics.setColor(1, 1, 1, 1)
 
-	-- update camera
-	state.camera:center_on(
-		state.player.x,
-		state.player.y
+	_cam_sx, _cam_sy = Iso.to_screen(
+		state.camera.x, state.camera.y
 	)
+	_sw = love.graphics.getWidth()
+	_sh = love.graphics.getHeight()
+	_cx = _sw / 2
+	_cy = _sh / 3
 
 	local queue = Queue.build(state)
 
-	-- depth sort
-	table.sort(queue, function(a, b)
-		return a.depth < b.depth
-	end)
+	table.sort(queue, sort_by_depth)
 
 	-- render
 	for _, item in ipairs(queue) do
 		if item.type == "floor" then
-			draw_floor(state, item.x, item.y)
+			draw_floor(item.x, item.y)
 
 		elseif item.type == "wall" then
-			draw_wall(state, item.x, item.y)
+			draw_wall(item.x, item.y)
 
 		elseif item.type == "prop" then
 			local sx, sy =
 				world_to_camera(
-					state,
 					item.x,
 					item.y
 				)
@@ -228,7 +210,6 @@ function M.draw(state)
 		elseif item.type == "exit" then
 			local sx, sy =
 				world_to_camera(
-					state,
 					item.x,
 					item.y
 				)
@@ -249,7 +230,6 @@ function M.draw(state)
 		elseif item.type == "enemy" then
 			local sx, sy =
 				world_to_camera(
-					state,
 					item.x,
 					item.y
 				)
@@ -263,7 +243,6 @@ function M.draw(state)
 		elseif item.type == "player" then
 			local sx, sy =
 				world_to_camera(
-					state,
 					item.x,
 					item.y
 				)
@@ -278,37 +257,32 @@ function M.draw(state)
 
 	-- anomaly visual overlays
 	if state.anomaly then
-		local w = love.graphics.getWidth()
-		local h = love.graphics.getHeight()
-
 		if state.anomaly.type == "silent" then
 			local vw = 30
 			love.graphics.setColor(0.1, 0.1, 0.15, 0.5)
-			love.graphics.rectangle("fill", 0, 0, w, vw)
-			love.graphics.rectangle("fill", 0, h - vw, w, vw)
-			love.graphics.rectangle("fill", 0, 0, vw, h)
-			love.graphics.rectangle("fill", w - vw, 0, vw, h)
+			love.graphics.rectangle("fill", 0, 0, _sw, vw)
+			love.graphics.rectangle("fill", 0, _sh - vw, _sw, vw)
+			love.graphics.rectangle("fill", 0, 0, vw, _sh)
+			love.graphics.rectangle("fill", _sw - vw, 0, vw, _sh)
 
 		elseif state.anomaly.type == "dead" then
 			love.graphics.setColor(0.25, 0.25, 0.25, 0.15)
-			love.graphics.rectangle("fill", 0, 0, w, h)
+			love.graphics.rectangle("fill", 0, 0, _sw, _sh)
 
 		elseif state.anomaly.type == "echo" then
 			love.graphics.setColor(0.6, 0.55, 0.8, 0.08)
-			love.graphics.rectangle("fill", 0, 0, w, 120)
+			love.graphics.rectangle("fill", 0, 0, _sw, 120)
 		end
 	end
 
 	-- game over overlay
 	if state.is_game_over then
-		local w = love.graphics.getWidth()
-		local h = love.graphics.getHeight()
 		love.graphics.setColor(0.75, 0.75, 0.75, 0.85)
 		love.graphics.printf(
 			"You died in the Veil.",
 			0,
-			h / 2 - 20,
-			w,
+			_sh / 2 - 20,
+			_sw,
 			"center"
 		)
 	end

@@ -25,7 +25,7 @@ function M:start(data)
 
 	self.data = data or {}
 
-	if self.data.duration then
+	if self.data.duration ~= nil then
 		self.duration = self.data.duration
 	end
 end

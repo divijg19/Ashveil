@@ -14,7 +14,6 @@ function M.setup(game, room)
 			tags = {"curiosity"},
 			interaction = {
 				action = "Inspect",
-				event_type = nil,
 			},
 			inspect = "The monolith is split down the center. The fracture is older than memory.",
 		},
@@ -30,7 +29,6 @@ function M.setup(game, room)
 			tags = {"curiosity"},
 			interaction = {
 				action = "Inspect",
-				event_type = nil,
 			},
 			inspect = "The mural has been worn smooth. Only the outline of a descending figure remains.",
 		},

@@ -34,7 +34,9 @@ function M.activate(poi)
 		return nil
 	end
 
-	return poi.poi.interaction.event_type
+	return poi.poi.interaction
+		and poi.poi.interaction.event_type
+		or nil
 end
 
 function M.complete(prop)

@@ -28,7 +28,7 @@ function M.start(player, enemy, modifier)
 		if vdef then
 			encounter.variant = enemy.variant
 			encounter.enemy_hp = encounter.enemy_hp + vdef.hp_mod
-			enemy.max_hp = enemy.max_hp + vdef.hp_mod
+			enemy.max_hp = (enemy.max_hp or 0) + vdef.hp_mod
 		end
 	end
 
@@ -36,7 +36,7 @@ function M.start(player, enemy, modifier)
 		encounter.player_hp = math.ceil(encounter.player_hp / 2)
 	elseif modifier == "fury" then
 		encounter.enemy_hp = encounter.enemy_hp + 2
-		enemy.max_hp = enemy.max_hp + 2
+		enemy.max_hp = (enemy.max_hp or 0) + 2
 	end
 
 	return encounter

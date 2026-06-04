@@ -9,6 +9,7 @@ local M = {
 }
 
 function M.push(text)
+	if not text then return end
 	table.insert(M._queue, text)
 	if M._state == "idle" or M._state == "passive" then
 		M._advance()
@@ -16,12 +17,11 @@ function M.push(text)
 end
 
 function M.push_passive(text)
-	if M._state ~= "idle" and M._state ~= "passive" then
-		return
+	if not text then return end
+	table.insert(M._queue, {text = text, is_passive = true})
+	if M._state == "idle" or M._state == "passive" then
+		M._advance()
 	end
-	M._active = text
-	M._state = "passive"
-	M._timer = 0
 end
 
 function M._advance()
@@ -31,21 +31,32 @@ function M._advance()
 		return
 	end
 
-	M._active = table.remove(M._queue, 1)
-	M._state = "fade_in"
+	local entry = table.remove(M._queue, 1)
 	M._timer = 0
+	if type(entry) == "string" then
+		M._active = entry
+		M._state = "fade_in"
+	else
+		M._active = entry.text
+		if entry.is_passive then
+			M._state = "passive"
+		else
+			M._state = "fade_in"
+		end
+	end
 end
+
+local _current = {}
 
 function M.current()
 	if M._state == "idle" then
 		return nil
 	end
 
-	return {
-		text = M._active,
-		alpha = M:_alpha(),
-		is_waiting = M._state == "active",
-	}
+	_current.text = M._active
+	_current.alpha = M:_alpha()
+	_current.is_waiting = M._state == "active"
+	return _current
 end
 
 function M:_alpha()

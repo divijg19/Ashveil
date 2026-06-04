@@ -21,6 +21,11 @@ local ARCHETYPE_FACTS = {
 		relentless_fury = { text = "Becomes increasingly reckless when cornered.", discovered = false },
 		reckless = { text = "Predictably aggressive.", discovered = false },
 	},
+	sentinel = {
+		ancient_memory = { text = "Fights with the memory of ages past.", discovered = false },
+		unyielding = { text = "Rarely yields ground once engaged.", discovered = false },
+		veil_touched = { text = "Draws strength from the Veil itself.", discovered = false },
+	},
 }
 
 function M.init(player)
@@ -100,6 +105,9 @@ function M.discovered_count(player, archetype)
 end
 
 function M.mastered(player, archetype)
+	if not player.knowledge then
+		return false
+	end
 	local entry = player.knowledge[archetype]
 	if not entry or entry.encounters < 10 then
 		return false

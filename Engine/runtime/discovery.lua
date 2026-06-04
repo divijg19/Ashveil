@@ -33,14 +33,16 @@ function M.spawn(game, room, config)
 			break
 		end
 
-		x = love.math.random(
-			room.x + 1,
-			room.x + room.w - 2
-		)
-		y = love.math.random(
-			room.y + 1,
-			room.y + room.h - 2
-		)
+		if room.w > 2 and room.h > 2 then
+			x = love.math.random(
+				room.x + 1,
+				room.x + room.w - 2
+			)
+			y = love.math.random(
+				room.y + 1,
+				room.y + room.h - 2
+			)
+		end
 	end
 
 	if not (game.map[y]

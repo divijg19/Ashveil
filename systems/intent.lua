@@ -76,7 +76,7 @@ function M.select_intent(archetype, hp, max_hp, variant_tendency)
 
 	for _, intent in ipairs(INTENTS) do
 		local w = weights[intent]
-		if w then
+		if w and w > 0 then
 			cumulative = cumulative + w
 			if roll <= cumulative then
 				return intent

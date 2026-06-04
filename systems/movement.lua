@@ -34,7 +34,7 @@ function M.player(game, action)
 	local ny = game.player.y + dy
 
 	-- wall check
-	if not (game.map[ny] and game.map[ny][nx] ~= "#") then
+	if not (game.map[ny] and game.map[ny][nx] and game.map[ny][nx] ~= "#") then
 		return
 	end
 
@@ -57,7 +57,7 @@ function M.enemy(game, e)
 	local nx = e.x + d[1]
 	local ny = e.y + d[2]
 
-	if not (game.map[ny] and game.map[ny][nx] ~= "#") then
+	if not (game.map[ny] and game.map[ny][nx] and game.map[ny][nx] ~= "#") then
 		return
 	end
 

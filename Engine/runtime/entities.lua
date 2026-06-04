@@ -21,7 +21,14 @@ local ARCHETYPES = {
 	},
 }
 
-local ARCHETYPE_NAMES = {"brute", "stalker", "watcher", "fanatic", "sentinel"}
+local ARCHETYPE_NAMES
+do
+	local names = {}
+	for k in pairs(ARCHETYPES) do
+		table.insert(names, k)
+	end
+	ARCHETYPE_NAMES = names
+end
 
 local M = {}
 
@@ -35,7 +42,7 @@ end
 
 function M.spawn_enemy(enemies, room, archetype)
 	archetype = archetype or M.random_archetype()
-	local def = ARCHETYPES[archetype]
+	local def = ARCHETYPES[archetype] or ARCHETYPES.brute
 	local hp = def.hp
 
 	table.insert(enemies, {

@@ -3,6 +3,7 @@ local combat = require("render.combat")
 local transition = require("render.transition")
 local event_view = require("render.event")
 local character_view = require("render.character")
+local inventory_view = require("render.inventory")
 
 local M = {}
 
@@ -11,6 +12,10 @@ local M = {}
 -- =============================
 
 function M.draw(state)
+	if not state.scene then
+		return
+	end
+
 	-- scene content first
 	if state.scene:is("explore") then
 		explore.draw(state)
@@ -39,15 +44,30 @@ function M.draw(state)
 	if state.show_character then
 		character_view.draw(state)
 	end
+
+	-- inventory overlay
+	if state.show_inventory then
+		inventory_view.draw(state)
+	end
 end
 
 -- =============================
 -- TOP-LEFT CHARACTER PANEL
 -- =============================
 
+-- stance colors (module-level constant)
+local STANCE_COLORS = {
+	aggressive = { 0.85, 0.55, 0.45, 1 },
+	guarded = { 0.5, 0.7, 0.85, 1 },
+	focused = { 0.85, 0.8, 0.5, 1 },
+}
+
 function M.draw_top_panel(state)
 	local w = love.graphics.getWidth()
 	local p = state.player
+	if not p or not p.stats then
+		return
+	end
 
 	-- solid background (taller for vertical stats + stance)
 	love.graphics.setColor(0.08, 0.08, 0.08, 0.88)
@@ -70,12 +90,7 @@ function M.draw_top_panel(state)
 	love.graphics.print("AGI  " .. p.stats.agility, 16, 78)
 
 	-- stance display (color-coded)
-	local stance_colors = {
-		aggressive = { 0.85, 0.55, 0.45, 1 },
-		guarded = { 0.5, 0.7, 0.85, 1 },
-		focused = { 0.85, 0.8, 0.5, 1 },
-	}
-	local sc = stance_colors[p.stance] or { 0.7, 0.7, 0.65, 1 }
+	local sc = STANCE_COLORS[p.stance] or { 0.7, 0.7, 0.65, 1 }
 	love.graphics.setColor(sc)
 	love.graphics.print(p.stance:gsub("^%l", string.upper), 16, 94)
 
@@ -111,14 +126,16 @@ function M.draw_bottom_narrative(state)
 	love.graphics.rectangle("line", px, py, w - 20, ph)
 
 	-- message text
-	love.graphics.setColor(0.85, 0.85, 0.85, msg.alpha or 1)
-	love.graphics.printf(
-		msg.text,
-		px + 20,
-		py + 18,
-		w - 60,
-		"center"
-	)
+	if msg.text then
+		love.graphics.setColor(0.85, 0.85, 0.85, msg.alpha or 1)
+		love.graphics.printf(
+			msg.text,
+			px + 20,
+			py + 18,
+			w - 60,
+			"center"
+		)
+	end
 
 	-- acknowledgment prompt
 	if msg.is_waiting then
@@ -142,6 +159,10 @@ end
 function M.draw_bottom_actions(state)
 	local w = love.graphics.getWidth()
 	local h = love.graphics.getHeight()
+
+	if not state.scene then
+		return
+	end
 
 	local py = h - 42
 

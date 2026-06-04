@@ -41,7 +41,10 @@ function M.grant(player, id, floor, region, source)
 	if not ARTIFACTS[id] then
 		return false
 	end
-	if player.inventory.artifacts[id] then
+	if not player or not player.inventory then
+		return false
+	end
+	if player.inventory.artifacts and player.inventory.artifacts[id] then
 		return false
 	end
 	if floor then
@@ -66,10 +69,16 @@ function M.grant(player, id, floor, region, source)
 end
 
 function M.has(player, id)
+	if not player or not player.inventory or not player.inventory.artifacts then
+		return false
+	end
 	return player.inventory.artifacts[id] ~= nil
 end
 
 function M.count(player)
+	if not player or not player.inventory then
+		return 0
+	end
 	local n = 0
 	for _ in pairs(player.inventory.artifacts or {}) do
 		n = n + 1
@@ -78,6 +87,9 @@ function M.count(player)
 end
 
 function M.each(player)
+	if not player or not player.inventory then
+		return pairs({})
+	end
 	return pairs(player.inventory.artifacts or {})
 end
 

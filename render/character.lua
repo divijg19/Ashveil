@@ -1,6 +1,5 @@
 local Relics = require("Engine.runtime.relics")
 local Artifacts = require("Engine.runtime.artifacts")
-local Consumables = require("Engine.runtime.consumables")
 
 local STANCES = {"guarded", "aggressive", "focused"}
 local STANCE_LABELS = {
@@ -50,6 +49,9 @@ function M.draw(state)
 	local w = love.graphics.getWidth()
 	local h = love.graphics.getHeight()
 	local p = state.player
+	if not p then
+		return
+	end
 
 	-- backdrop
 	love.graphics.setColor(0, 0, 0, 0.85)
@@ -104,7 +106,7 @@ function M.draw(state)
 	love.graphics.print("-- Blessings --", lcx, lcy)
 	lcy = lcy + line_h
 
-	if #p.blessings == 0 then
+	if not p.blessings or #p.blessings == 0 then
 		love.graphics.setColor(0.5, 0.5, 0.5, 1)
 		love.graphics.print("(none)", lcx, lcy)
 		lcy = lcy + line_h
@@ -157,14 +159,6 @@ function M.draw(state)
 
 	lcy = lcy + 8
 
-	-- gold
-	love.graphics.setColor(0.9, 0.9, 0.9, 1)
-	love.graphics.print("-- Gold --", lcx, lcy)
-	lcy = lcy + line_h
-	love.graphics.setColor(0.75, 0.75, 0.75, 1)
-	love.graphics.print(p.gold, lcx, lcy)
-	lcy = lcy + line_h
-
 	-- ============================
 	-- RIGHT COLUMN — Discoveries
 	-- ============================
@@ -183,7 +177,7 @@ function M.draw(state)
 		love.graphics.setColor(0.75, 0.75, 0.75, 1)
 		local shown = 0
 		local max_shown = 8
-		for id in pairs(p.relics) do
+		for id in pairs(p.relics or {}) do
 			if shown >= max_shown then
 				break
 			end
@@ -232,7 +226,7 @@ function M.draw(state)
 					rcy = rcy + line_h
 				elseif meta and meta.floor then
 					love.graphics.setColor(0.5, 0.5, 0.5, 0.7)
-					local prov = "F" .. meta.floor .. "  " .. meta.region
+					local prov = "F" .. meta.floor .. "  " .. (meta.region or "Unknown")
 					if meta.source then
 						prov = prov .. "  " .. meta.source
 					end
@@ -244,32 +238,6 @@ function M.draw(state)
 	end
 
 	local max_ry = py + ph - 30
-
-	if rcy < max_ry then
-		rcy = rcy + 4
-		-- consumables (summarized)
-		love.graphics.setColor(0.9, 0.9, 0.9, 1)
-		love.graphics.print("-- Consumables --", rcx, rcy)
-		rcy = rcy + line_h
-
-		local con_ids = {"bandage", "ration"}
-		local has_any = false
-		for _, cid in ipairs(con_ids) do
-			local count = Consumables.count(p, cid)
-			local def = Consumables.def(cid)
-			if def and count > 0 then
-				has_any = true
-				love.graphics.setColor(0.75, 0.75, 0.75, 1)
-				love.graphics.print(def.name .. " x" .. count, rcx, rcy)
-				rcy = rcy + line_h
-			end
-		end
-		if not has_any then
-			love.graphics.setColor(0.5, 0.5, 0.5, 1)
-			love.graphics.print("(none)", rcx, rcy)
-			rcy = rcy + line_h
-		end
-	end
 
 	if rcy < max_ry then
 		rcy = rcy + 4

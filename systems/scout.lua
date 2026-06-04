@@ -27,10 +27,16 @@ local SCOUT_TIERS = {
 		understand = "Its aggression suggests an incoming assault.",
 		insight = "You recall Fanatics commit heavily to offense.",
 	},
+	sentinel = {
+		glimpse = "The Sentinel's form shifts like memory.",
+		read = "You notice echoes of older battles in its stance.",
+		understand = "It mirrors past conflicts in its movements.",
+		insight = "You recall Sentinals draw on forgotten strength.",
+	},
 }
 
 function M.resolve(combat, player, roll_level)
-	local arch = combat.enemy.archetype
+	local arch = combat.enemy.archetype or "unknown"
 	local templates = SCOUT_TIERS[arch] or SCOUT_TIERS.brute
 	local msg = ""
 
@@ -44,6 +50,8 @@ function M.resolve(combat, player, roll_level)
 		msg = templates.insight
 	elseif roll_level == "revelation" then
 		msg = "You see through the " .. arch .. " completely. " .. templates.understand
+	else
+		msg = "You gather your thoughts on the " .. arch .. "."
 	end
 
 	-- Check for fact discovery at insight+
