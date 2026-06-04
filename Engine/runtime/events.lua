@@ -6,6 +6,57 @@ local MessagePanel = require("Engine.runtime.message_panel")
 
 local SYMBOLS = {"△", "□", "○", "◇"}
 
+local function trial_resolve(game, event, choice)
+	local trial = event.trial
+	local expected = trial.sequence[trial.step]
+
+	if choice ~= expected then
+		trial.mode = "done"
+		event.message = "The seal falls silent. The pattern fades."
+		event.options = {"Continue"}
+		event.resolve = function(g, e, c)
+			e.done = true
+			return {message = nil, completed = true}
+		end
+		return {trial = true, completed = true}
+	end
+
+	trial.step = trial.step + 1
+
+	if trial.step > #trial.sequence then
+		trial.mode = "done"
+
+		local bonus = 1
+		if game.player.blessing_doubled then
+			bonus = 2
+		end
+
+		event.message = "The seal accepts your understanding. Choose:"
+		event.options = {
+			"+" .. bonus .. " Strength",
+			"+" .. bonus .. " Resolve",
+			"+" .. bonus .. " Perception",
+		}
+		event.resolve = function(g, e, c)
+			local stat = c == 1 and "strength"
+				or c == 2 and "resolve"
+				or "perception"
+			local b = 1
+			if g.player.blessing_doubled then
+				b = 2
+			end
+			g.player.stats[stat] = g.player.stats[stat] + b
+			e.done = true
+			return {message = ("You feel transformed. +%d %s."):format(
+				b, stat:gsub("^%l", string.upper)
+			), completed = true}
+		end
+		return {trial = true, completed = true}
+	end
+
+	return {trial = true}
+end
+
 local EVENT_DEFS = {
 	shrine_altar = {
 		cancel_index = 4,
@@ -634,74 +685,39 @@ function M.resolve(game, event, choice)
 	end
 
 	if result.trial then
+		if result.completed then
+			if game.player.discovery_log then
+				table.insert(
+					game.player.discovery_log,
+					event.type
+				)
+				if #game.player.discovery_log > 10 then
+					table.remove(
+						game.player.discovery_log,
+						1
+					)
+				end
+			end
+		end
 		return
 	end
 
 	event.done = true
 
-	if game.player.discovery_log then
-		table.insert(
-			game.player.discovery_log,
-			event.type
-		)
-		if #game.player.discovery_log > 10 then
-			table.remove(
+	if not result.completed then
+		if game.player.discovery_log then
+			table.insert(
 				game.player.discovery_log,
-				1
+				event.type
 			)
-		end
-	end
-end
-
-local function trial_resolve(game, event, choice)
-	local trial = event.trial
-	local expected = trial.sequence[trial.step]
-
-	if choice ~= expected then
-		trial.mode = "done"
-		event.message = "The seal falls silent. The pattern fades."
-		event.options = {"Continue"}
-		event.resolve = function(g, e, c)
-			e.done = true
-			return {message = nil}
-		end
-		return {trial = true}
-	end
-
-	trial.step = trial.step + 1
-
-	if trial.step > #trial.sequence then
-		trial.mode = "done"
-
-		local bonus = 1
-		if game.player.blessing_doubled then
-			bonus = 2
-		end
-
-		event.message = "The seal accepts your understanding. Choose:"
-		event.options = {
-			"+" .. bonus .. " Strength",
-			"+" .. bonus .. " Resolve",
-			"+" .. bonus .. " Perception",
-		}
-		event.resolve = function(g, e, c)
-			local stat = c == 1 and "strength"
-				or c == 2 and "resolve"
-				or "perception"
-			local b = 1
-			if g.player.blessing_doubled then
-				b = 2
+			if #game.player.discovery_log > 10 then
+				table.remove(
+					game.player.discovery_log,
+					1
+				)
 			end
-			g.player.stats[stat] = g.player.stats[stat] + b
-			e.done = true
-			return {message = "You feel transformed. +"
-				.. b .. " "
-				.. stat:gsub("^%l", string.upper) .. "."}
 		end
-		return {trial = true}
 	end
-
-	return {trial = true}
 end
 
 return M

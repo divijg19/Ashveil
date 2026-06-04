@@ -6,6 +6,119 @@ local Iso =
 
 local M = {}
 
+local PROP_RENDERERS = {
+	pillar = function(sx, sy)
+		love.graphics.rectangle("fill", sx - 6, sy - 18, 12, 24)
+	end,
+	altar = function(sx, sy)
+		love.graphics.rectangle("fill", sx - 10, sy - 10, 20, 20)
+	end,
+	sarcophagus = function(sx, sy)
+		love.graphics.rectangle("fill", sx - 8, sy - 14, 16, 28)
+	end,
+	rubble = function(sx, sy)
+		love.graphics.rectangle("fill", sx - 10, sy - 6, 20, 12)
+	end,
+	obelisk = function(sx, sy)
+		love.graphics.rectangle("fill", sx - 4, sy - 24, 8, 32)
+	end,
+	seal = function(sx, sy)
+		love.graphics.circle("line", sx, sy, 10)
+	end,
+	remains = function(sx, sy)
+		love.graphics.rectangle("fill", sx - 6, sy - 4, 12, 8)
+	end,
+	brazier = function(sx, sy)
+		love.graphics.rectangle("fill", sx - 4, sy - 12, 8, 12)
+	end,
+	statue = function(sx, sy)
+		love.graphics.rectangle("fill", sx - 8, sy - 24, 16, 36)
+	end,
+	broken_column = function(sx, sy)
+		love.graphics.rectangle("fill", sx - 8, sy - 10, 16, 12)
+	end,
+	tomb = function(sx, sy)
+		love.graphics.rectangle("fill", sx - 12, sy - 16, 24, 32)
+	end,
+	glyph = function(sx, sy)
+		love.graphics.circle("fill", sx, sy, 4)
+	end,
+	blood_seal = function(sx, sy)
+		love.graphics.circle("line", sx, sy, 12)
+		love.graphics.circle("line", sx, sy, 6)
+	end,
+	reliquary = function(sx, sy)
+		love.graphics.rectangle("fill", sx - 10, sy - 14, 20, 20)
+	end,
+	hidden_passage = function(sx, sy)
+		love.graphics.rectangle("fill", sx - 8, sy - 8, 20, 20)
+	end,
+	side_door = function(sx, sy)
+		love.graphics.rectangle("line", sx - 6, sy - 14, 12, 24)
+	end,
+	monolith = function(sx, sy)
+		love.graphics.rectangle("fill", sx - 6, sy - 30, 12, 40)
+	end,
+	mural = function(sx, sy)
+		love.graphics.rectangle("fill", sx - 18, sy - 12, 36, 24)
+	end,
+	veil_echo = function(sx, sy)
+		love.graphics.circle("line", sx, sy, 8)
+		love.graphics.circle("line", sx, sy, 4)
+	end,
+	fallen_explorer = function(sx, sy, prop)
+		if prop.state == "resolved" then
+			love.graphics.setColor(0.3, 0.28, 0.25, 0.5)
+			love.graphics.rectangle("line", sx - 6, sy - 12, 12, 18)
+		else
+			love.graphics.setColor(0.4, 0.35, 0.3, 0.85)
+			love.graphics.rectangle("fill", sx - 4, sy - 10, 8, 16)
+			love.graphics.rectangle("fill", sx - 8, sy - 16, 8, 8)
+		end
+	end,
+	torn_satchel = function(sx, sy, prop)
+		if prop.state == "resolved" then
+			love.graphics.setColor(0.4, 0.35, 0.25, 0.4)
+			love.graphics.rectangle("line", sx - 5, sy - 4, 10, 8)
+		else
+			love.graphics.setColor(0.5, 0.4, 0.25, 0.8)
+			love.graphics.polygon("fill", sx - 6, sy + 2, sx + 4, sy + 6, sx + 8, sy - 4, sx - 2, sy - 8)
+		end
+	end,
+	pilgrim_pack = function(sx, sy, prop)
+		if prop.state == "resolved" then
+			love.graphics.setColor(0.35, 0.28, 0.2, 0.4)
+			love.graphics.rectangle("line", sx - 5, sy - 2, 10, 8)
+		else
+			love.graphics.setColor(0.45, 0.35, 0.25, 0.8)
+			love.graphics.rectangle("fill", sx - 5, sy - 4, 10, 12)
+			love.graphics.setColor(0.5, 0.4, 0.3, 0.8)
+			love.graphics.rectangle("fill", sx + 6, sy - 18, 3, 26)
+		end
+	end,
+	forgotten_shrine = function(sx, sy, prop)
+		if prop.state == "resolved" then
+			love.graphics.setColor(0.3, 0.28, 0.25, 0.45)
+			love.graphics.rectangle("line", sx - 6, sy - 8, 12, 12)
+		else
+			love.graphics.setColor(0.4, 0.35, 0.3, 0.8)
+			love.graphics.rectangle("fill", sx - 6, sy - 10, 12, 14)
+			love.graphics.setColor(0.5, 0.4, 0.3, 0.85)
+			love.graphics.rectangle("fill", sx - 2, sy - 14, 4, 6)
+		end
+	end,
+	hidden_cache = function(sx, sy, prop)
+		if prop.state == "resolved" then
+			love.graphics.setColor(0.2, 0.2, 0.18, 0.3)
+			love.graphics.line(sx - 4, sy - 2, sx, sy + 2, sx + 4, sy - 1)
+			love.graphics.line(sx - 2, sy + 1, sx + 1, sy + 4)
+		else
+			love.graphics.setColor(0.25, 0.25, 0.22, 0.35)
+			love.graphics.rectangle("fill", sx - 5, sy - 3, 10, 6)
+		end
+	end,
+}
+
 local function get_screen_center()
 	local w = love.graphics.getWidth()
 	local h = love.graphics.getHeight()
@@ -96,405 +209,21 @@ function M.draw(state)
 					item.y
 				)
 
-		if item.prop.type == "pillar" then
-			love.graphics.rectangle(
-				"fill",
-
-				sx - 6,
-				sy - 18,
-
-				12,
-				24
-			)
-
-		elseif item.prop.type == "altar" then
-			love.graphics.rectangle(
-				"fill",
-
-				sx - 10,
-				sy - 10,
-
-				20,
-				20
-			)
-
-		elseif item.prop.type == "sarcophagus" then
-			love.graphics.rectangle(
-				"fill",
-
-				sx - 8,
-				sy - 14,
-
-				16,
-				28
-			)
-
-		elseif item.prop.type == "rubble" then
-			love.graphics.rectangle(
-				"fill",
-
-				sx - 10,
-				sy - 6,
-
-				20,
-				12
-			)
-
-		elseif item.prop.type == "obelisk" then
-			love.graphics.rectangle(
-				"fill",
-
-				sx - 4,
-				sy - 24,
-
-				8,
-				32
-			)
-
-		elseif item.prop.type == "seal" then
-			love.graphics.circle(
-				"line",
-
-				sx,
-				sy,
-
-				10
-			)
-
-		elseif item.prop.type == "remains" then
-			love.graphics.rectangle(
-				"fill",
-
-				sx - 6,
-				sy - 4,
-
-				12,
-				8
-			)
-
-		elseif item.prop.type == "brazier" then
-			love.graphics.rectangle(
-				"fill",
-
-				sx - 4,
-				sy - 12,
-
-				8,
-				12
-			)
-
-		elseif item.prop.type == "statue" then
-			love.graphics.rectangle(
-				"fill",
-
-				sx - 8,
-				sy - 24,
-
-				16,
-				36
-			)
-
-		elseif item.prop.type == "broken_column" then
-			love.graphics.rectangle(
-				"fill",
-
-				sx - 8,
-				sy - 10,
-
-				16,
-				12
-			)
-
-		elseif item.prop.type == "tomb" then
-			love.graphics.rectangle(
-				"fill",
-
-				sx - 12,
-				sy - 16,
-
-				24,
-				32
-			)
-
-		elseif item.prop.type == "glyph" then
-			love.graphics.circle(
-				"fill",
-
-				sx,
-				sy,
-
-				4
-			)
-
-		elseif item.prop.type == "blood_seal" then
-			love.graphics.circle(
-				"line",
-
-				sx,
-				sy,
-
-				12
-			)
-
-			love.graphics.circle(
-				"line",
-
-				sx,
-				sy,
-
-				6
-			)
-
-		elseif item.prop.type == "reliquary" then
-			love.graphics.rectangle(
-				"fill",
-
-				sx - 10,
-				sy - 14,
-
-				20,
-				20
-			)
-
-		elseif item.prop.type == "hidden_passage" then
-			love.graphics.rectangle(
-				"fill",
-
-				sx - 8,
-				sy - 8,
-
-				20,
-				20
-			)
-
-		elseif item.prop.type == "side_door" then
-			love.graphics.rectangle(
-				"line",
-
-				sx - 6,
-				sy - 14,
-
-				12,
-				24
-			)
-
-		elseif item.prop.type == "monolith" then
-			love.graphics.rectangle(
-				"fill",
-
-				sx - 6,
-				sy - 30,
-
-				12,
-				40
-			)
-
-		elseif item.prop.type == "mural" then
-			love.graphics.rectangle(
-				"fill",
-
-				sx - 18,
-				sy - 12,
-
-				36,
-				24
-			)
-
-		elseif item.prop.type == "veil_echo" then
-			love.graphics.circle(
-				"line",
-
-				sx,
-				sy,
-
-				8
-			)
-
-			love.graphics.circle(
-				"line",
-
-				sx,
-				sy,
-
-				4
-			)
-
-		elseif item.prop.type == "fallen_explorer" then
-			if item.prop.state == "resolved" then
-				love.graphics.setColor(0.3, 0.28, 0.25, 0.5)
-				-- searched remains — scattered outline
-				love.graphics.rectangle(
-					"line",
-
-					sx - 6,
-					sy - 12,
-
-					12,
-					18
-				)
-			else
-				love.graphics.setColor(0.4, 0.35, 0.3, 0.85)
-				-- slumped body
-				love.graphics.rectangle(
-					"fill",
-
-					sx - 4,
-					sy - 10,
-
-					8,
-					16
-				)
-				-- head slumped to side
-				love.graphics.rectangle(
-					"fill",
-
-					sx - 8,
-					sy - 16,
-
-					8,
-					8
+			local render_fn =
+				PROP_RENDERERS[
+					item.prop.type
+				]
+			if render_fn then
+				render_fn(
+					sx,
+					sy,
+					item.prop
 				)
 			end
 
-		elseif item.prop.type == "torn_satchel" then
-			if item.prop.state == "resolved" then
-				love.graphics.setColor(0.4, 0.35, 0.25, 0.4)
-				-- empty satchel — collapsed shape
-				love.graphics.rectangle(
-					"line",
-
-					sx - 5,
-					sy - 4,
-
-					10,
-					8
-				)
-			else
-				love.graphics.setColor(0.5, 0.4, 0.25, 0.8)
-				-- tilted rectangle
-				love.graphics.polygon(
-					"fill",
-
-					sx - 6,
-					sy + 2,
-
-					sx + 4,
-					sy + 6,
-
-					sx + 8,
-					sy - 4,
-
-					sx - 2,
-					sy - 8
-				)
-			end
-
-		elseif item.prop.type == "pilgrim_pack" then
-			if item.prop.state == "resolved" then
-				love.graphics.setColor(0.35, 0.28, 0.2, 0.4)
-				-- empty pack — flat rectangle
-				love.graphics.rectangle(
-					"line",
-
-					sx - 5,
-					sy - 2,
-
-					10,
-					8
-				)
-			else
-				love.graphics.setColor(0.45, 0.35, 0.25, 0.8)
-				-- bundle
-				love.graphics.rectangle(
-					"fill",
-
-					sx - 5,
-					sy - 4,
-
-					10,
-					12
-				)
-				-- staff
-				love.graphics.setColor(0.5, 0.4, 0.3, 0.8)
-				love.graphics.rectangle(
-					"fill",
-
-					sx + 6,
-					sy - 18,
-
-					3,
-					26
-				)
-			end
-
-		elseif item.prop.type == "forgotten_shrine" then
-			if item.prop.state == "resolved" then
-				love.graphics.setColor(0.3, 0.28, 0.25, 0.45)
-				-- empty pedestal — stone outline
-				love.graphics.rectangle(
-					"line",
-
-					sx - 6,
-					sy - 8,
-
-					12,
-					12
-				)
-			else
-				love.graphics.setColor(0.4, 0.35, 0.3, 0.8)
-				-- collapsed shrine — small stack
-				love.graphics.rectangle(
-					"fill",
-
-					sx - 6,
-					sy - 10,
-
-					12,
-					14
-				)
-				-- idol on top
-				love.graphics.setColor(0.5, 0.4, 0.3, 0.85)
-				love.graphics.rectangle(
-					"fill",
-
-					sx - 2,
-					sy - 14,
-
-					4,
-					6
-				)
-			end
-
-		elseif item.prop.type == "hidden_cache" then
-			if item.prop.state == "resolved" then
-				-- broken seal — crack lines
-				love.graphics.setColor(0.2, 0.2, 0.18, 0.3)
-				love.graphics.line(
-					sx - 4, sy - 2,
-					sx, sy + 2,
-					sx + 4, sy - 1
-				)
-				love.graphics.line(
-					sx - 2, sy + 1,
-					sx + 1, sy + 4
-				)
-			else
-				-- faint floor mark — barely visible
-				love.graphics.setColor(0.25, 0.25, 0.22, 0.35)
-				love.graphics.rectangle(
-					"fill",
-
-					sx - 5,
-					sy - 3,
-
-					10,
-					6
-				)
-			end
-		end
-
-		-- color reset for non-prop items
-		love.graphics.setColor(1, 1, 1, 1)
+			love.graphics.setColor(
+				1, 1, 1, 1
+			)
 
 		elseif item.type == "exit" then
 			local sx, sy =
@@ -544,6 +273,29 @@ function M.draw(state)
 				sx - 4,
 				sy
 			)
+		end
+	end
+
+	-- anomaly visual overlays
+	if state.anomaly then
+		local w = love.graphics.getWidth()
+		local h = love.graphics.getHeight()
+
+		if state.anomaly.type == "silent" then
+			local vw = 30
+			love.graphics.setColor(0.1, 0.1, 0.15, 0.5)
+			love.graphics.rectangle("fill", 0, 0, w, vw)
+			love.graphics.rectangle("fill", 0, h - vw, w, vw)
+			love.graphics.rectangle("fill", 0, 0, vw, h)
+			love.graphics.rectangle("fill", w - vw, 0, vw, h)
+
+		elseif state.anomaly.type == "dead" then
+			love.graphics.setColor(0.25, 0.25, 0.25, 0.15)
+			love.graphics.rectangle("fill", 0, 0, w, h)
+
+		elseif state.anomaly.type == "echo" then
+			love.graphics.setColor(0.6, 0.55, 0.8, 0.08)
+			love.graphics.rectangle("fill", 0, 0, w, 120)
 		end
 	end
 

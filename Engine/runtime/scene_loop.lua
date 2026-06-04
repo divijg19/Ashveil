@@ -1,14 +1,14 @@
 local M = {}
 
-function M.update(game, action)
+function M.update(game, action, dt)
 	if game.scene:is("explore") then
 		game:update_explore(action)
 
 	elseif game.scene:is("transition") then
-		game:update_transition()
+		game:update_transition(dt)
 
 	elseif game.scene:is("combat") then
-		game:update_combat(action)
+		game:update_combat(action, dt)
 
 	elseif game.scene:is("event") then
 		game:update_event(action)

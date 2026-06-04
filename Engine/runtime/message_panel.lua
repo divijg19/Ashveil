@@ -16,6 +16,9 @@ function M.push(text)
 end
 
 function M.push_passive(text)
+	if M._state ~= "idle" and M._state ~= "passive" then
+		return
+	end
 	M._active = text
 	M._state = "passive"
 	M._timer = 0
