@@ -3,6 +3,9 @@ local M = {}
 local function blocked_by_prop(game, x, y)
 	for _, p in ipairs(game.props or {}) do
 		if p.x == x and p.y == y then
+			if p.state == "resolved" then
+				return false
+			end
 			return true
 		end
 	end
@@ -50,7 +53,7 @@ function M.enemy(game, e)
 		{ 1, 0 },
 	}
 
-	local d = dirs[math.random(#dirs)]
+	local d = dirs[love.math.random(#dirs)]
 	local nx = e.x + d[1]
 	local ny = e.y + d[2]
 

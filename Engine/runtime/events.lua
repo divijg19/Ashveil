@@ -2,6 +2,7 @@ local Reward = require("Engine.runtime.rewards")
 local Relics = require("Engine.runtime.relics")
 local Artifacts = require("Engine.runtime.artifacts")
 local Consumables = require("Engine.runtime.consumables")
+local MessagePanel = require("Engine.runtime.message_panel")
 
 local SYMBOLS = {"△", "□", "○", "◇"}
 
@@ -25,9 +26,6 @@ local EVENT_DEFS = {
 				)
 			then
 				game.player.discovery_flags.prayer_hint_received = true
-				local MessagePanel = require(
-					"Engine.runtime.message_panel"
-				)
 				MessagePanel.push(
 					"The altar hums in recognition of the prayer."
 				)
@@ -41,17 +39,17 @@ local EVENT_DEFS = {
 			if choice == 1 then
 				Reward.blessing(game.player, "Blessing of Ash")
 				game.player.stats.resolve = game.player.stats.resolve + bonus
-				game.player.gold = game.player.gold + 2
+				Reward.gold(game.player, 2, "shrine_altar")
 				return {message = "Resolve fills you. +" .. bonus .. " Resolve. An offering of gold rests at the base."}
 			elseif choice == 2 then
 				Reward.blessing(game.player, "Blessing of Sight")
 				game.player.stats.perception = game.player.stats.perception + bonus
-				game.player.gold = game.player.gold + 2
+				Reward.gold(game.player, 2, "shrine_altar")
 				return {message = "Your perception sharpens. +" .. bonus .. " Perception. An offering of gold rests at the base."}
 			elseif choice == 3 then
 				Reward.blessing(game.player, "Blessing of Might")
 				game.player.stats.strength = game.player.stats.strength + bonus
-				game.player.gold = game.player.gold + 2
+				Reward.gold(game.player, 2, "shrine_altar")
 				return {message = "Strength surges through you. +" .. bonus .. " Strength. An offering of gold rests at the base."}
 			end
 			return {message = nil}
@@ -247,8 +245,8 @@ local EVENT_DEFS = {
 
 			if roll < 0.30 then
 				Reward.vitality(game.player, 1)
-				game.player.gold = game.player.gold + 1
-				return {message = "You find a hidden vitality cache. +1 Vitality. A single coin glints nearby."}
+				local gold_msg = Reward.gold(game.player, 1, "ruin_debris")
+				return {message = "You find a hidden vitality cache. +1 Vitality. " .. gold_msg}
 			else
 				return {message = "Nothing but dust and rubble."}
 			end
@@ -271,10 +269,10 @@ local EVENT_DEFS = {
 				local stat = stats[love.math.random(#stats)]
 				game.player.stats[stat] = game.player.stats[stat] + 1
 				local gold = love.math.random(1, 2)
-				game.player.gold = game.player.gold + gold
+				local gold_msg = Reward.gold(game.player, gold, "ruin_statue")
 				return {message = "A faint glyph reveals hidden knowledge. +1 "
 					.. stat:gsub("^%l", string.upper)
-					.. ". You find " .. gold .. " gold near the base."}
+					.. ". " .. gold_msg}
 
 			elseif roll < 0.50 then
 				Reward.vitality(game.player, 1)
@@ -315,8 +313,8 @@ local EVENT_DEFS = {
 
 			local relic_id = Relics.random_unowned(game.player)
 			if not relic_id then
-				game.player.gold = game.player.gold + 10
-				return {message = "The reliquary is empty. You find scattered gold."}
+				local gold_msg = Reward.gold(game.player, 10, "reliquary")
+				return {message = "The reliquary is empty. " .. gold_msg}
 			end
 
 			Relics.grant(game.player, relic_id)
@@ -368,8 +366,8 @@ local EVENT_DEFS = {
 
 			if roll < 0.35 then
 				Reward.vitality(game.player, 1)
-				game.player.gold = game.player.gold + 1
-				return {message = "A small chamber holds preserved vitality. +1 Vitality. A few coins lie scattered."}
+				local gold_msg = Reward.gold(game.player, 1, "side_door")
+				return {message = "A small chamber holds preserved vitality. +1 Vitality. " .. gold_msg}
 
 			elseif roll < 0.70 then
 				return {message = "The room beyond is empty. Dust covers the floor."}
@@ -398,9 +396,12 @@ local EVENT_DEFS = {
 			end
 
 			local gold = love.math.random(1, 3) + math.floor(game.floor / 5)
-			game.player.gold = game.player.gold + gold
+			local gold_msg = Reward.gold(game.player, gold, "fallen_explorer")
 
-			local msg = "The explorer did not make it further. You find " .. gold .. " gold."
+			local msg = "The explorer did not make it further. " .. gold_msg
+
+			Artifacts.grant(game.player, "broken_compass", game.floor, game.current_region.name, "Fallen Explorer")
+			msg = msg .. " A broken compass lies beside them."
 
 			if love.math.random() < 0.40 then
 				Consumables.grant(game.player, "bandage")
@@ -408,7 +409,7 @@ local EVENT_DEFS = {
 			end
 
 			if love.math.random() < 0.20 then
-				Artifacts.grant(game.player, "exploratoris_ephemeris")
+				Artifacts.grant(game.player, "exploratoris_ephemeris", game.floor, game.current_region.name, "Fallen Explorer")
 				msg = msg .. " Their journal survives."
 			end
 
@@ -426,9 +427,9 @@ local EVENT_DEFS = {
 			end
 
 			local gold = love.math.random(2, 4)
-			game.player.gold = game.player.gold + gold
+			local gold_msg = Reward.gold(game.player, gold, "torn_satchel")
 
-			local msg = "You find " .. gold .. " gold inside."
+			local msg = gold_msg
 
 			if love.math.random() < 0.35 then
 				Consumables.grant(game.player, "ration")
@@ -449,9 +450,9 @@ local EVENT_DEFS = {
 			end
 
 			local gold = love.math.random(1, 3)
-			game.player.gold = game.player.gold + gold
+			local gold_msg = Reward.gold(game.player, gold, "pilgrim_pack")
 
-			local msg = "You find " .. gold .. " gold in the pack."
+			local msg = gold_msg
 
 			if love.math.random() < 0.50 then
 				Consumables.grant(game.player, "ration")
@@ -459,7 +460,7 @@ local EVENT_DEFS = {
 			end
 
 			if not Artifacts.has(game.player, "preces_fragmentum") then
-				Artifacts.grant(game.player, "preces_fragmentum")
+				Artifacts.grant(game.player, "preces_fragmentum", game.floor, game.current_region.name, "Pilgrim Pack")
 				msg = msg .. " Inside, a strip of parchment with faded words."
 			end
 
@@ -477,9 +478,12 @@ local EVENT_DEFS = {
 			end
 
 			local gold = love.math.random(8, 12)
-			game.player.gold = game.player.gold + gold
+			local gold_msg = Reward.gold(game.player, gold, "hidden_cache")
 
-			local msg = "You uncover a hidden cache with " .. gold .. " gold."
+			local msg = gold_msg
+
+			Artifacts.grant(game.player, "melted_coin", game.floor, game.current_region.name, "Hidden Cache")
+			msg = msg .. " A melted coin is among the contents."
 
 			local rng = love.math.random()
 			if rng < 0.30 then
@@ -491,8 +495,30 @@ local EVENT_DEFS = {
 			end
 
 			if love.math.random() < 0.25 then
-				Artifacts.grant(game.player, "sigillum_fractum")
+				Artifacts.grant(game.player, "sigillum_fractum", game.floor, game.current_region.name, "Hidden Cache")
 				msg = msg .. " A broken seal lies behind loose stonework."
+			end
+
+			return {message = msg}
+		end,
+	},
+
+	forgotten_shrine = {
+		cancel_index = 2,
+		message = "A small shrine, long forgotten. Only a fractured idol remains.",
+		options = {"Take the Idol", "Leave"},
+		resolve = function(game, event, choice)
+			if choice == 2 then
+				return {message = nil}
+			end
+
+			local gold = love.math.random(1, 3)
+			local gold_msg = Reward.gold(game.player, gold, "forgotten_shrine")
+			local msg = gold_msg
+
+			if not Artifacts.has(game.player, "cracked_idol") then
+				Artifacts.grant(game.player, "cracked_idol", game.floor, game.current_region.name, "Forgotten Shrine")
+				msg = msg .. " The idol feels warm to the touch."
 			end
 
 			return {message = msg}
@@ -509,7 +535,7 @@ local EVENT_DEFS = {
 			end
 
 			local gold = love.math.random(8, 12)
-			local tier = event.poi and event.poi.scout_tier or "read"
+			local tier = (event.poi.poi and event.poi.poi.scout_tier) or "read"
 			local mult = {
 				glimpse = 1,
 				read = 1,
@@ -518,9 +544,12 @@ local EVENT_DEFS = {
 				revelation = 2,
 			}
 			gold = math.floor(gold * (mult[tier] or 1))
-			game.player.gold = game.player.gold + gold
+			local gold_msg = Reward.gold(game.player, gold, "hidden_cache_scout")
 
-			local msg = "You uncover a hidden cache with " .. gold .. " gold."
+			local msg = gold_msg
+
+			Artifacts.grant(game.player, "melted_coin", game.floor, game.current_region.name, "Hidden Cache")
+			msg = msg .. " A melted coin is among the contents."
 
 			local rng = love.math.random()
 			if rng < 0.35 then
@@ -532,7 +561,7 @@ local EVENT_DEFS = {
 			end
 
 			if love.math.random() < 0.20 then
-				Artifacts.grant(game.player, "sigillum_fractum")
+				Artifacts.grant(game.player, "sigillum_fractum", game.floor, game.current_region.name, "Hidden Cache")
 				msg = msg .. " A broken seal lies among the contents."
 			end
 
@@ -543,15 +572,45 @@ local EVENT_DEFS = {
 
 local M = {}
 
+local FIND_VARIANTS = {
+	fallen_explorer = {
+		"A fallen explorer rests against the wall.\nTheir pack is partially open.",
+		"Bones and cloth — someone did not make it out.",
+		"A body lies tucked in a corner.\nA small bag rests nearby.",
+	},
+	pilgrim_pack = {
+		"A weathered pack rests near the shrine. Pilgrim's belongings.",
+		"A pack lies abandoned at the shrine's base.",
+	},
+	torn_satchel = {
+		"A torn satchel lies discarded in the shadows.",
+		"A satchel, torn and forgotten, spills its contents.",
+	},
+	hidden_cache = {
+		"You notice disturbed stonework. Something is hidden here.",
+		"A section of the wall seems loose. There may be something behind it.",
+	},
+	forgotten_shrine = {
+		"A small shrine, long forgotten. Only a fractured idol remains.",
+		"Crumbled stone marks where a shrine once stood. An idol lies in the rubble.",
+	},
+}
+
 function M.start(event_type, poi)
 	local def = EVENT_DEFS[event_type]
 	if not def then
 		return nil
 	end
 
+	local message = def.message
+	local variants = FIND_VARIANTS[event_type]
+	if variants then
+		message = variants[love.math.random(#variants)]
+	end
+
 	return {
 		type = event_type,
-		message = def.message,
+		message = message,
 		options = def.options,
 		resolve = def.resolve,
 		selection = 1,
@@ -579,6 +638,19 @@ function M.resolve(game, event, choice)
 	end
 
 	event.done = true
+
+	if game.player.discovery_log then
+		table.insert(
+			game.player.discovery_log,
+			event.type
+		)
+		if #game.player.discovery_log > 10 then
+			table.remove(
+				game.player.discovery_log,
+				1
+			)
+		end
+	end
 end
 
 local function trial_resolve(game, event, choice)

@@ -19,6 +19,7 @@ local Artifacts = require("Engine.runtime.artifacts")
 local Consumables = require("Engine.runtime.consumables")
 local Regions = require("Engine.runtime.regions")
 local Variants = require("Engine.runtime.variants")
+local Reward = require("Engine.runtime.rewards")
 local Intent = require("systems.intent")
 local Tells = require("systems.tells")
 local Dice = require("systems.dice")
@@ -72,6 +73,7 @@ function Game:new()
 			blessing_doubled = false,
 			trial_mod = nil,
 			discovery_flags = {},
+			discovery_log = {},
 		},
 
 		enemies = {},
@@ -450,11 +452,6 @@ function Game:update_combat(action)
 		if c.insight_turns > 0 then
 			c.insight_turns = c.insight_turns - 1
 		end
-
-		-- Reset per-turn fields
-		c.scout_observation = nil
-		c.scout_tier = nil
-		c.new_fact_text = nil
 	end
 
 	if not action then
@@ -850,16 +847,12 @@ function Game:exit_combat(player_won)
 					"The sentinel's remains yield a relic."
 				)
 			else
-				self.player.gold = self.player.gold + 10
-				MessagePanel.push(
-					"The sentinel's chamber holds gold."
-				)
+				local gold_msg = Reward.gold(self.player, 10, "sentinel_consolation")
+				MessagePanel.push(gold_msg)
 			end
 		else
-			self.player.gold = self.player.gold + 12
-			MessagePanel.push(
-				"You find a gold cache in the sentinel's chamber."
-			)
+			local gold_msg = Reward.gold(self.player, 12, "sentinel_cache")
+			MessagePanel.push(gold_msg)
 		end
 	end
 
@@ -872,7 +865,7 @@ function Game:exit_combat(player_won)
 		and not self.player.discovery_flags.mark_complete
 	then
 		self.player.discovery_flags.mark_complete = true
-		Artifacts.grant(self.player, "messorem_cinis")
+		Artifacts.grant(self.player, "messorem_cinis", self.floor, self.current_region.name, "Echo Chamber")
 		MessagePanel.push(
 			"The Echo Chamber bears the Mark of Ash. You understand now.\nA fragment of charcoal-black stone rests among the echoes."
 		)
