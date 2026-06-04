@@ -15,6 +15,8 @@ local Events = require("Engine.runtime.events")
 local POI = require("Engine.runtime.poi")
 local Inspection = require("Engine.runtime.inspection")
 local Relics = require("Engine.runtime.relics")
+local Artifacts = require("Engine.runtime.artifacts")
+local Consumables = require("Engine.runtime.consumables")
 local Regions = require("Engine.runtime.regions")
 local Variants = require("Engine.runtime.variants")
 local Intent = require("systems.intent")
@@ -58,6 +60,13 @@ function Game:new()
 			},
 			blessings = {},
 			relics = {},
+			inventory = {
+				artifacts = {},
+				consumables = {},
+				key_items = {},
+			},
+			gold = 0,
+			max_vitality = 10,
 			stance = "guarded",
 			floor_heal_used = false,
 			blessing_doubled = false,
@@ -141,6 +150,15 @@ function Game:update(action)
 	end
 
 	self.log = ""
+
+	-- Consumable hotkeys work globally
+	if action == "1" then
+		self:use_consumable("bandage")
+		return
+	elseif action == "2" then
+		self:use_consumable("ration")
+		return
+	end
 
 	if self.show_character then
 		self:update_character(action)
@@ -545,6 +563,24 @@ function Game:update_combat(action)
 			c.insight_turns = scout_result.insight_turns
 		end
 
+		-- Scout may reveal hidden treasure
+		if roll.level == "understand"
+			or roll.level == "insight"
+			or roll.level == "revelation"
+		then
+			local stash_chance = {
+				understand = 0.15,
+				insight = 0.25,
+				revelation = 0.35,
+			}
+			if love.math.random() < (stash_chance[roll.level] or 0.15) then
+				c._scout_found_stash = true
+				c._scout_tier_for_stash = roll.level
+				c.scout_observation = c.scout_observation
+					.. " You notice disturbed stonework."
+			end
+		end
+
 		-- Enemy acts
 		local enemy_result = self:_process_enemy_turn(c)
 		if enemy_result == nil then
@@ -678,6 +714,25 @@ function Game:exit_combat(player_won)
 	self.combat = nil
 	self.scene:set("explore")
 
+	-- Scout-revealed hidden cache: spawn after combat
+	if player_won and c._scout_found_stash then
+		table.insert(self.props, {
+			x = self.player.x + 1,
+			y = self.player.y,
+			type = "hidden_cache",
+			poi = {
+				state = "active",
+				tags = {"treasure"},
+				interaction = {
+					action = "Search",
+					event_type = "hidden_cache_scout",
+				},
+				inspect = "You noticed this during the fight. Disturbed stonework.",
+				scout_tier = c._scout_tier_for_stash,
+			},
+		})
+	end
+
 	if not player_won then
 		self.player.trial_mod = nil
 		return
@@ -766,6 +821,48 @@ function Game:exit_combat(player_won)
 		end
 	end
 
+	-- Elite variant relic chance (5%)
+	if c.variant and player_won then
+		if love.math.random() < 0.05 then
+			local relic_id = Relics.random_unowned(self.player)
+			if relic_id then
+				Relics.grant(self.player, relic_id)
+				local vdef = Variants.def(c.variant)
+				MessagePanel.push(
+					"The "
+						.. (vdef and vdef.name or "elite")
+						.. " carried a relic."
+				)
+			end
+		end
+	end
+
+	-- Sentinel: relic or gold cache
+	if c.enemy
+		and c.enemy.archetype == "sentinel"
+		and player_won
+	then
+		if love.math.random() < 0.50 then
+			local relic_id = Relics.random_unowned(self.player)
+			if relic_id then
+				Relics.grant(self.player, relic_id)
+				MessagePanel.push(
+					"The sentinel's remains yield a relic."
+				)
+			else
+				self.player.gold = self.player.gold + 10
+				MessagePanel.push(
+					"The sentinel's chamber holds gold."
+				)
+			end
+		else
+			self.player.gold = self.player.gold + 12
+			MessagePanel.push(
+				"You find a gold cache in the sentinel's chamber."
+			)
+		end
+	end
+
 	-- Mark of Ash: check completion after sentinel defeat
 	if c
 		and c.enemy
@@ -775,9 +872,35 @@ function Game:exit_combat(player_won)
 		and not self.player.discovery_flags.mark_complete
 	then
 		self.player.discovery_flags.mark_complete = true
+		Artifacts.grant(self.player, "messorem_cinis")
 		MessagePanel.push(
-			"The Echo Chamber bears the Mark of Ash. You understand now."
+			"The Echo Chamber bears the Mark of Ash. You understand now.\nA fragment of charcoal-black stone rests among the echoes."
 		)
+	end
+end
+
+-- =========================
+-- CONSUMABLES
+-- =========================
+
+function Game:use_consumable(id)
+	local player = self.player
+	if not player.inventory.consumables[id]
+		or player.inventory.consumables[id] < 1
+	then
+		return
+	end
+
+	if self.scene:is("combat") then
+		MessagePanel.push("Cannot use items in combat.")
+		return
+	end
+
+	local def = Consumables.def(id)
+	if def then
+		def.use(player)
+		player.inventory.consumables[id] = player.inventory.consumables[id] - 1
+		MessagePanel.push(def.use_message or "Used " .. def.name .. ".")
 	end
 end
 
