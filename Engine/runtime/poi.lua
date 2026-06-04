@@ -37,9 +37,12 @@ function M.activate(poi)
 	return poi.poi.interaction.event_type
 end
 
-function M.complete(poi)
-	if poi and poi.poi then
-		poi.poi.state = "completed"
+function M.complete(prop)
+	if prop then
+		prop.state = "resolved"
+		if prop.poi then
+			prop.poi.state = "completed"
+		end
 	end
 end
 

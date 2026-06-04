@@ -320,85 +320,181 @@ function M.draw(state)
 			)
 
 		elseif item.prop.type == "fallen_explorer" then
-			love.graphics.setColor(0.4, 0.35, 0.3, 0.85)
-			-- slumped body
-			love.graphics.rectangle(
-				"fill",
+			if item.prop.state == "resolved" then
+				love.graphics.setColor(0.3, 0.28, 0.25, 0.5)
+				-- searched remains — scattered outline
+				love.graphics.rectangle(
+					"line",
 
-				sx - 4,
-				sy - 10,
+					sx - 6,
+					sy - 12,
 
-				8,
-				16
-			)
-			-- head slumped to side
-			love.graphics.rectangle(
-				"fill",
+					12,
+					18
+				)
+			else
+				love.graphics.setColor(0.4, 0.35, 0.3, 0.85)
+				-- slumped body
+				love.graphics.rectangle(
+					"fill",
 
-				sx - 8,
-				sy - 16,
+					sx - 4,
+					sy - 10,
 
-				8,
-				8
-			)
+					8,
+					16
+				)
+				-- head slumped to side
+				love.graphics.rectangle(
+					"fill",
+
+					sx - 8,
+					sy - 16,
+
+					8,
+					8
+				)
+			end
 
 		elseif item.prop.type == "torn_satchel" then
-			love.graphics.setColor(0.5, 0.4, 0.25, 0.8)
-			-- tilted rectangle
-			love.graphics.polygon(
-				"fill",
+			if item.prop.state == "resolved" then
+				love.graphics.setColor(0.4, 0.35, 0.25, 0.4)
+				-- empty satchel — collapsed shape
+				love.graphics.rectangle(
+					"line",
 
-				sx - 6,
-				sy + 2,
+					sx - 5,
+					sy - 4,
 
-				sx + 4,
-				sy + 6,
+					10,
+					8
+				)
+			else
+				love.graphics.setColor(0.5, 0.4, 0.25, 0.8)
+				-- tilted rectangle
+				love.graphics.polygon(
+					"fill",
 
-				sx + 8,
-				sy - 4,
+					sx - 6,
+					sy + 2,
 
-				sx - 2,
-				sy - 8
-			)
+					sx + 4,
+					sy + 6,
+
+					sx + 8,
+					sy - 4,
+
+					sx - 2,
+					sy - 8
+				)
+			end
 
 		elseif item.prop.type == "pilgrim_pack" then
-			love.graphics.setColor(0.45, 0.35, 0.25, 0.8)
-			-- bundle
-			love.graphics.rectangle(
-				"fill",
+			if item.prop.state == "resolved" then
+				love.graphics.setColor(0.35, 0.28, 0.2, 0.4)
+				-- empty pack — flat rectangle
+				love.graphics.rectangle(
+					"line",
 
-				sx - 5,
-				sy - 4,
+					sx - 5,
+					sy - 2,
 
-				10,
-				12
-			)
-			-- staff
-			love.graphics.setColor(0.5, 0.4, 0.3, 0.8)
-			love.graphics.rectangle(
-				"fill",
+					10,
+					8
+				)
+			else
+				love.graphics.setColor(0.45, 0.35, 0.25, 0.8)
+				-- bundle
+				love.graphics.rectangle(
+					"fill",
 
-				sx + 6,
-				sy - 18,
+					sx - 5,
+					sy - 4,
 
-				3,
-				26
-			)
+					10,
+					12
+				)
+				-- staff
+				love.graphics.setColor(0.5, 0.4, 0.3, 0.8)
+				love.graphics.rectangle(
+					"fill",
+
+					sx + 6,
+					sy - 18,
+
+					3,
+					26
+				)
+			end
+
+		elseif item.prop.type == "forgotten_shrine" then
+			if item.prop.state == "resolved" then
+				love.graphics.setColor(0.3, 0.28, 0.25, 0.45)
+				-- empty pedestal — stone outline
+				love.graphics.rectangle(
+					"line",
+
+					sx - 6,
+					sy - 8,
+
+					12,
+					12
+				)
+			else
+				love.graphics.setColor(0.4, 0.35, 0.3, 0.8)
+				-- collapsed shrine — small stack
+				love.graphics.rectangle(
+					"fill",
+
+					sx - 6,
+					sy - 10,
+
+					12,
+					14
+				)
+				-- idol on top
+				love.graphics.setColor(0.5, 0.4, 0.3, 0.85)
+				love.graphics.rectangle(
+					"fill",
+
+					sx - 2,
+					sy - 14,
+
+					4,
+					6
+				)
+			end
 
 		elseif item.prop.type == "hidden_cache" then
-			-- faint floor mark — barely visible
-			love.graphics.setColor(0.25, 0.25, 0.22, 0.35)
-			love.graphics.rectangle(
-				"fill",
+			if item.prop.state == "resolved" then
+				-- broken seal — crack lines
+				love.graphics.setColor(0.2, 0.2, 0.18, 0.3)
+				love.graphics.line(
+					sx - 4, sy - 2,
+					sx, sy + 2,
+					sx + 4, sy - 1
+				)
+				love.graphics.line(
+					sx - 2, sy + 1,
+					sx + 1, sy + 4
+				)
+			else
+				-- faint floor mark — barely visible
+				love.graphics.setColor(0.25, 0.25, 0.22, 0.35)
+				love.graphics.rectangle(
+					"fill",
 
-				sx - 5,
-				sy - 3,
+					sx - 5,
+					sy - 3,
 
-				10,
-				6
-			)
-			love.graphics.setColor(1, 1, 1, 1)
+					10,
+					6
+				)
+			end
 		end
+
+		-- color reset for non-prop items
+		love.graphics.setColor(1, 1, 1, 1)
 
 		elseif item.type == "exit" then
 			local sx, sy =

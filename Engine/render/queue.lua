@@ -1,5 +1,24 @@
 local M = {}
 
+local FIND_TYPES = {
+	fallen_explorer = true,
+	torn_satchel = true,
+	pilgrim_pack = true,
+	hidden_cache = true,
+	forgotten_shrine = true,
+}
+
+local DEPTH_OFFSET = {
+	decoration = 0.10,
+	resolved   = 0.15,
+	prop       = 0.20,
+	find       = 0.25,
+	poi        = 0.30,
+	stairs     = 0.40,
+	enemy      = 0.50,
+	player     = 0.60,
+}
+
 function M.build(state)
 	local queue = {}
 
@@ -22,6 +41,16 @@ function M.build(state)
 
 	-- props
 	for _, p in ipairs(state.props or {}) do
+		local kind
+
+		if p.state == "resolved" then
+			kind = "resolved"
+		elseif p.poi then
+			kind = FIND_TYPES[p.type] and "find" or "poi"
+		else
+			kind = "prop"
+		end
+
 		table.insert(queue, {
 			type = "prop",
 
@@ -31,7 +60,8 @@ function M.build(state)
 			prop = p,
 
 			depth =
-				p.x + p.y + 0.25
+				p.x + p.y
+				+ DEPTH_OFFSET[kind]
 		})
 	end
 
@@ -43,7 +73,7 @@ function M.build(state)
 		depth =
 			state.exit.x +
 			state.exit.y +
-			0.4
+			DEPTH_OFFSET.stairs
 	})
 
 	-- enemies
@@ -55,7 +85,7 @@ function M.build(state)
 			y = e.y,
 
 			depth =
-				e.x + e.y + 0.5
+				e.x + e.y + DEPTH_OFFSET.enemy
 		})
 	end
 
@@ -69,12 +99,8 @@ function M.build(state)
 		depth =
 			state.player.x
 			+ state.player.y
-			+ 0.5
+			+ DEPTH_OFFSET.player
 	})
-
-	table.sort(queue, function(a, b)
-		return a.depth < b.depth
-	end)
 
 	return queue
 end

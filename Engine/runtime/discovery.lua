@@ -55,6 +55,7 @@ function M.spawn(game, room, config)
 		x = x,
 		y = y,
 		type = config.type,
+		state = "active",
 		poi = {
 			state = "active",
 			tags = config.tags or {"discovery"},

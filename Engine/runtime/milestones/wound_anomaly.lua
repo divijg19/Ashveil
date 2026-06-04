@@ -7,8 +7,4 @@ function M.setup(game)
 	MessagePanel.push("The Veil is bleeding. Something has wounded it.")
 end
 
-function M.reset(game)
-	game.wound_anomaly_active = nil
-end
-
 return M

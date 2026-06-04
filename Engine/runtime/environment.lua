@@ -192,6 +192,18 @@ function M.spawn_finds(game, rooms, anomaly)
 	end
 
 	for _, room in ipairs(rooms) do
+		if room.type == "shrine" and love.math.random() < 0.10 then
+			Discovery.spawn(game, room, {
+				type = "forgotten_shrine",
+				action = "Investigate",
+				event_type = "forgotten_shrine",
+				inspect = "The shrine has collapsed. Only a fractured idol remains.",
+				tags = {"relic"},
+			})
+		end
+	end
+
+	for _, room in ipairs(rooms) do
 		if room.landmark and love.math.random() < 0.02 then
 			Discovery.spawn(game, room, {
 				type = "hidden_cache",
