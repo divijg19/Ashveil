@@ -41,6 +41,8 @@ local DISCOVERY_LABELS = {
 	arena_challenge = "Arena",
 	arena_trial = "Trial",
 	crypt_tomb = "Tomb",
+	watcher_remains = "Watcher Remains",
+	charred_remains = "Charred Remains",
 }
 
 local M = {}

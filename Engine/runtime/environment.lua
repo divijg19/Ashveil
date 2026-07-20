@@ -214,6 +214,30 @@ function M.spawn_finds(game, rooms, anomaly)
 			})
 		end
 	end
+
+	for _, room in ipairs(rooms) do
+		if room.type ~= "threshold" and love.math.random() < 0.03 then
+			Discovery.spawn(game, room, {
+				type = "remains",
+				action = "Search",
+				event_type = "watcher_remains",
+				inspect = "The watcher's remains still hold a trace of observation.",
+				tags = {"remains"},
+			})
+		end
+	end
+
+	for _, room in ipairs(rooms) do
+		if room.type == "crypt" and love.math.random() < 0.06 then
+			Discovery.spawn(game, room, {
+				type = "remains",
+				action = "Search",
+				event_type = "charred_remains",
+				inspect = "The fire was not natural. Something endured it.",
+				tags = {"remains"},
+			})
+		end
+	end
 end
 
 function M.tag_pois(game, rooms, anomaly)

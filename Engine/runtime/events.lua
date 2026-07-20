@@ -2,6 +2,7 @@ local Reward = require("Engine.runtime.rewards")
 local Relics = require("Engine.runtime.relics")
 local Artifacts = require("Engine.runtime.artifacts")
 local Consumables = require("Engine.runtime.consumables")
+local Equipment = require("Engine.runtime.equipment")
 local MessagePanel = require("Engine.runtime.message_panel")
 
 local SYMBOLS = {"△", "□", "○", "◇"}
@@ -46,7 +47,21 @@ local function trial_resolve(game, event, choice)
 				b = 2
 			end
 			g.player.stats[stat] = g.player.stats[stat] + b
-			Reward.veil_shards(g.player, 1)
+			local veil_bonus = 1
+			if g.player.equipment_mods
+				and g.player.equipment_mods.veil_affinity
+			then
+				veil_bonus = veil_bonus + g.player.equipment_mods.veil_affinity
+			end
+			Reward.veil_shards(g.player, veil_bonus)
+
+			if not g.player.discovery_flags.prayer_knot_recovered then
+				if Equipment.grant(g.player, "prayer_knot", g.floor, g.current_region.name, "Shrine Seal Trial") then
+					MessagePanel.push_passive("A prayer knot forms in your hand, woven from the trial's last breath.\nRecovered\nPrayer Knot")
+				end
+				g.player.discovery_flags.prayer_knot_recovered = true
+			end
+
 			e.done = true
 			return {message = ("You feel transformed. +%d %s.\nA Veil Shard resonates within the seal."):format(
 				b, stat:gsub("^%l", string.upper)
@@ -176,19 +191,29 @@ local EVENT_DEFS = {
 				return {message = nil}
 			end
 
-			local roll = love.math.random()
+			local player = game.player
+			local msg = ""
 
+			if Equipment.grant(player, "ash_charm", game.floor, game.current_region.name, "Crypt Sarcophagus") then
+				msg = msg .. "A fragment of ash charm rests within."
+				MessagePanel.push_passive("Recovered\nAsh Charm")
+			end
+
+			local roll = love.math.random()
 			if roll < 0.40 then
-				Reward.vitality(game.player, 1)
-				local msg = "You find preserved vitality within. +1 Vitality."
+				Reward.vitality(player, 1)
+				msg = msg .. " You find preserved vitality within. +1 Vitality."
 				if love.math.random() < 0.50 then
-					Consumables.grant(game.player, "ration")
+					Consumables.grant(player, "ration")
 					msg = msg .. " Rations, still sealed."
 				end
-				return {message = msg}
-			else
-				return {message = "The sarcophagus is empty."}
 			end
+
+			if msg == "" then
+				msg = "The sarcophagus is empty."
+			end
+
+			return {message = msg}
 		end,
 	},
 
@@ -452,6 +477,11 @@ local EVENT_DEFS = {
 
 			local msg = "The explorer did not make it further. " .. gold_msg
 
+			if Equipment.grant(game.player, "surveyors_knife", game.floor, game.current_region.name, "Fallen Explorer") then
+				msg = msg .. " A worn knife rests in their grip."
+				MessagePanel.push_passive("Recovered\nSurveyor's Knife")
+			end
+
 			if Artifacts.grant(game.player, "broken_compass", game.floor, game.current_region.name, "Fallen Explorer") then
 				msg = msg .. " A broken compass lies beside them."
 			end
@@ -508,6 +538,11 @@ local EVENT_DEFS = {
 
 			local msg = gold_msg
 
+			if Equipment.grant(game.player, "pilgrims_staff", game.floor, game.current_region.name, "Pilgrim Pack") then
+				msg = msg .. " A weathered staff rests beside the pack."
+				MessagePanel.push_passive("Recovered\nPilgrim's Staff")
+			end
+
 			if love.math.random() < 0.50 then
 				Consumables.grant(game.player, "ration")
 				msg = msg .. " Rations, untouched."
@@ -538,6 +573,36 @@ local EVENT_DEFS = {
 
 			if Artifacts.grant(game.player, "melted_coin", game.floor, game.current_region.name, "Hidden Cache") then
 				msg = msg .. " A melted coin is among the contents."
+			end
+
+			-- Equipment: fill-missing logic for Rusted Machete / Hollow Coin
+			local player = game.player
+			local owns_machete = Equipment.has_id(player, "rusted_machete")
+			local owns_coin = Equipment.has_id(player, "hollow_coin")
+
+			if owns_machete and not owns_coin then
+				if Equipment.grant(player, "hollow_coin", game.floor, game.current_region.name, "Hidden Cache") then
+					msg = msg .. " A coin with no center glints in the dust."
+					MessagePanel.push_passive("Recovered\nHollow Coin")
+				end
+			elseif owns_coin and not owns_machete then
+				if Equipment.grant(player, "rusted_machete", game.floor, game.current_region.name, "Hidden Cache") then
+					msg = msg .. " A rusted machete lies wedged between stones."
+					MessagePanel.push_passive("Recovered\nRusted Machete")
+				end
+			elseif not owns_machete and not owns_coin then
+				local roll = love.math.random()
+				if roll < 0.80 then
+					if Equipment.grant(player, "rusted_machete", game.floor, game.current_region.name, "Hidden Cache") then
+						msg = msg .. " A rusted machete lies wedged between stones."
+						MessagePanel.push_passive("Recovered\nRusted Machete")
+					end
+				else
+					if Equipment.grant(player, "hollow_coin", game.floor, game.current_region.name, "Hidden Cache") then
+						msg = msg .. " A coin with no center glints in the dust."
+						MessagePanel.push_passive("Recovered\nHollow Coin")
+					end
+				end
 			end
 
 			local rng = love.math.random()
@@ -572,9 +637,60 @@ local EVENT_DEFS = {
 			local gold_msg = Reward.gold(game.player, gold, "forgotten_shrine")
 			local msg = gold_msg
 
+			if Equipment.grant(game.player, "echo_talisman", game.floor, game.current_region.name, "Forgotten Shrine") then
+				msg = msg .. " An echo talisman hums beneath the idol."
+				MessagePanel.push_passive("Recovered\nEcho Talisman")
+			end
+
 			if not Artifacts.has(game.player, "cracked_idol") then
 				Artifacts.grant(game.player, "cracked_idol", game.floor, game.current_region.name, "Forgotten Shrine")
 				msg = msg .. " The idol feels warm to the touch."
+			end
+
+			return {message = msg}
+		end,
+	},
+
+	watcher_remains = {
+		cancel_index = 2,
+		message = "The remains of a watcher lie curled in the shadows.",
+		options = {"Search", "Leave"},
+		resolve = function(game, event, choice)
+			if choice == 2 then
+				return {message = nil}
+			end
+
+			local gold = love.math.random(1, 3)
+			local gold_msg = Reward.gold(game.player, gold, "watcher_remains")
+			local msg = gold_msg
+
+			if Equipment.grant(game.player, "veil_hook", game.floor, game.current_region.name, "Watcher Remains") then
+				msg = msg .. " A hooked blade rests among the bones."
+				MessagePanel.push_passive("Recovered\nVeil Hook")
+			end
+
+			return {message = msg}
+		end,
+	},
+
+	charred_remains = {
+		cancel_index = 2,
+		message = "Scorched remains smolder in a hollow. The fire was recent.",
+		options = {"Search", "Leave"},
+		resolve = function(game, event, choice)
+			if choice == 2 then
+				return {message = nil}
+			end
+
+			local msg = ""
+
+			if Equipment.grant(game.player, "ash_charm", game.floor, game.current_region.name, "Charred Remains") then
+				msg = msg .. " A fragment of ash charm survives the flames."
+				MessagePanel.push_passive("Recovered\nAsh Charm")
+			end
+
+			if msg == "" then
+				msg = "Nothing remains but ash."
 			end
 
 			return {message = msg}
@@ -668,6 +784,24 @@ local EVENT_DEFS = {
 			if loot.relics then
 				for _, relic_id in ipairs(loot.relics) do
 					Relics.grant(game.player, relic_id)
+				end
+			end
+
+			if loot.equipment then
+				for _, eq in ipairs(loot.equipment) do
+					local inst = Equipment.grant(
+						game.player,
+						eq.id,
+						eq.floor,
+						eq.region,
+						eq.source
+					)
+					if inst then
+						local def = Equipment.def(eq.id)
+						if def then
+							MessagePanel.push_passive("Recovered\n" .. def.name)
+						end
+					end
 				end
 			end
 

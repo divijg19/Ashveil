@@ -1,4 +1,5 @@
 local MessagePanel = require("Engine.runtime.message_panel")
+local Equipment = require("Engine.runtime.equipment")
 
 local M = {}
 
@@ -35,6 +36,12 @@ local GOLD_MESSAGES = {
 }
 
 function M.gold(player, amount, source)
+	local mult = (player.equipment_mods
+		and player.equipment_mods.gold_mult)
+		or 0
+	if mult > 0 then
+		amount = math.floor(amount * (1 + mult))
+	end
 	player.gold = player.gold + amount
 	return GOLD_MESSAGES[source] or "You find " .. amount .. " gold."
 end
