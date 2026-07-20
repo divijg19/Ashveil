@@ -1,4 +1,5 @@
 local Variants = require("Engine.runtime.variants")
+local Equipment = require("Engine.runtime.equipment")
 
 local M = {}
 
@@ -238,7 +239,7 @@ function M.draw(state)
 		ry = ry + 22
 	else
 		local pv = p.stats.vitality or 0
-		local pmv = state.player.max_vitality or 10
+		local pmv = Equipment.effective_max_vitality(state.player)
 		love.graphics.setColor(0.75, 0.75, 0.75, 1)
 		love.graphics.print("Vitality: " .. pv .. " / " .. pmv, lx, ry)
 

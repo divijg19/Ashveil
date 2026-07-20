@@ -1,10 +1,12 @@
+local Equipment = require("Engine.runtime.equipment")
+
 local CONSUMABLES = {
 	bandage = {
 		name = "Bandage",
 		desc = "Restore 2 Vitality.",
 		use = function(player)
 			player.stats.vitality = math.min(
-				player.max_vitality or 10,
+				Equipment.effective_max_vitality(player),
 				player.stats.vitality + 2
 			)
 		end,
@@ -15,7 +17,7 @@ local CONSUMABLES = {
 		desc = "Restore 1 Vitality.",
 		use = function(player)
 			player.stats.vitality = math.min(
-				player.max_vitality or 10,
+				Equipment.effective_max_vitality(player),
 				player.stats.vitality + 1
 			)
 		end,

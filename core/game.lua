@@ -16,6 +16,7 @@ local POI = require("Engine.runtime.poi")
 local Inspection = require("Engine.runtime.inspection")
 local Relics = require("Engine.runtime.relics")
 local Consumables = require("Engine.runtime.consumables")
+local Equipment = require("Engine.runtime.equipment")
 local Regions = require("Engine.runtime.regions")
 local Variants = require("Engine.runtime.variants")
 local Intent = require("systems.intent")
@@ -65,6 +66,7 @@ function Game:new()
 				artifacts = {},
 				consumables = {},
 				key_items = {},
+				equipment = {},
 			},
 			gold = 0,
 			veil_shards = 0,
@@ -72,7 +74,16 @@ function Game:new()
 				weapon = nil,
 				charm = nil,
 			},
+			equipment_mods = {
+				attack = 0,
+				scout = 0,
+				veil_affinity = 0,
+				vitality = 0,
+				gold_mult = 0,
+				variant_damage = 0,
+			},
 			max_vitality = 10,
+			base_max_vitality = 10,
 			stance = "guarded",
 			floor_heal_used = false,
 			blessing_doubled = false,
@@ -117,6 +128,10 @@ function Game:new()
 
 		character_sheet = {
 			selection = 1,
+		},
+		inventory_state = {
+			cursor = 1,
+			initialized = false,
 		},
 	}
 
@@ -234,6 +249,10 @@ function Game:update_explore(action)
 	if action == "inventory" then
 		self.show_inventory = not self.show_inventory
 		self.show_character = false
+		if self.show_inventory then
+			self.inventory_state.initialized = true
+			self.inventory_state.cursor = 1
+		end
 		return
 	end
 
@@ -278,6 +297,61 @@ function Game:update_inventory(action)
 
 	if action == "close" then
 		self.show_inventory = false
+		self.inventory_state.initialized = false
+		return
+	end
+
+	local equipment = (self.player.inventory
+		and self.player.inventory.equipment) or {}
+
+	if action == "up" or action == "down" then
+		if #equipment == 0 then return end
+		if not self.inventory_state.initialized then
+			self.inventory_state.cursor = 1
+			self.inventory_state.initialized = true
+		end
+		if action == "down" then
+			self.inventory_state.cursor = self.inventory_state.cursor + 1
+			if self.inventory_state.cursor > #equipment then
+				self.inventory_state.cursor = 1
+			end
+		else
+			self.inventory_state.cursor = self.inventory_state.cursor - 1
+			if self.inventory_state.cursor < 1 then
+				self.inventory_state.cursor = #equipment
+			end
+		end
+		return
+	end
+
+	if action == "equip" then
+		if #equipment == 0 then return end
+		if not self.inventory_state.initialized then
+			self.inventory_state.cursor = 1
+			self.inventory_state.initialized = true
+		end
+		local inst = equipment[self.inventory_state.cursor]
+		if not inst then return end
+		local def = Equipment.def(inst.id)
+		if not def then return end
+		Equipment.equip(self.player, def.kind, inst.instance_id)
+		return
+	end
+
+	if action == "unequip" then
+		if #equipment == 0 then return end
+		if not self.inventory_state.initialized then
+			self.inventory_state.cursor = 1
+			self.inventory_state.initialized = true
+		end
+		local inst = equipment[self.inventory_state.cursor]
+		if not inst then return end
+		local def = Equipment.def(inst.id)
+		if not def then return end
+		if self.player.equipment[def.kind] == inst.instance_id then
+			Equipment.unequip(self.player, def.kind)
+		end
+		return
 	end
 end
 
@@ -505,7 +579,12 @@ function Game:update_combat(action, dt)
 
 	if action == "attack" then
 		-- Player deals damage
+		local mods = self.player.equipment_mods or {}
 		local dmg = self.player.stats.strength
+			+ (mods.attack or 0)
+		if c.enemy.variant then
+			dmg = dmg + (mods.variant_damage or 0)
+		end
 		if self.player.stance == "aggressive" then
 			dmg = dmg + 1
 		end
@@ -571,8 +650,10 @@ function Game:update_combat(action, dt)
 
 	elseif action == "scout" then
 		-- Calculate effective scout bonus
+		local mods = self.player.equipment_mods or {}
 		local bonus = (c.scout_bonus or 0)
 			+ self.player.stats.perception
+			+ (mods.scout or 0)
 		if self.player.stance == "focused" then
 			bonus = bonus + 3
 		elseif self.player.stance == "aggressive" then
@@ -926,6 +1007,18 @@ function Game:exit_combat(player_won)
 	if c.enemy
 		and c.enemy.archetype == "sentinel"
 	then
+		-- Warden's Blade: first sentinel kill (Option A: flag at combat win)
+		if not self.player.discovery_flags.wardens_blade_recovered then
+			self.player.discovery_flags.wardens_blade_recovered = true
+			corpse_loot.equipment = corpse_loot.equipment or {}
+			table.insert(corpse_loot.equipment, {
+				id = "wardens_blade",
+				source = "Echo Chamber Sentinel",
+				floor = self.floor,
+				region = self.current_region.name,
+			})
+		end
+
 		if love.math.random() < 0.50 then
 			local relic_id = Relics.random_unowned(self.player)
 			if relic_id then
@@ -1172,6 +1265,7 @@ function Game:get_draw_data()
 	d.show_character = self.show_character
 	d.show_pause = self.show_pause
 	d.character_sheet = self.character_sheet
+	d.inventory_state = self.inventory_state
 	d.wound_anomaly_active = self.wound_anomaly_active
 	return d
 end
