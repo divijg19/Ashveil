@@ -1,5 +1,6 @@
 local Variants = require("Engine.runtime.variants")
 local Equipment = require("Engine.runtime.equipment")
+local Knowledge = require("systems.knowledge")
 
 local M = {}
 
@@ -90,6 +91,20 @@ function M.draw(state)
 	love.graphics.setColor(0.85, 0.85, 0.85, 1)
 	love.graphics.print(ename, lx, ry)
 	ry = ry + 24
+
+	-- Recognition badge
+	local player_k = state.player and state.player.knowledge
+	if player_k then
+		local tier = Knowledge.tier(state.player, c.enemy.archetype)
+		if tier == "studied" or tier == "mastered" then
+			love.graphics.setColor(0.45, 0.45, 0.45, 0.5)
+			love.graphics.print(
+				"— " .. tier:gsub("^%l", string.upper),
+				lx + 140,
+				ry - 22
+			)
+		end
+	end
 
 	-- HP Bar + Vitality text
 	local bar_x = lx
@@ -268,8 +283,24 @@ function M.draw(state)
 
 		if #facts > 0 then
 			ry = ry + 4
+			local tier = Knowledge.tier(state.player, c.enemy.archetype)
+			local tier_label = ""
+			if tier == "studied" then
+				tier_label = " — Studied"
+			elseif tier == "mastered" then
+				tier_label = " — Mastered"
+			end
 			love.graphics.setColor(0.45, 0.45, 0.45, 0.5)
-			love.graphics.print("Observed", lx, ry)
+			love.graphics.print(
+				"Observed ("
+					.. Knowledge.discovered_count(state.player, c.enemy.archetype)
+					.. "/"
+					.. Knowledge.fact_count(c.enemy.archetype)
+					.. ")"
+					.. tier_label,
+				lx,
+				ry
+			)
 			ry = ry + 16
 
 			love.graphics.setColor(0.5, 0.55, 0.6, 0.55)

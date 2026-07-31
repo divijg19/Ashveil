@@ -10,9 +10,11 @@ local event_input = require("input.event")
 local character_input = require("input.character")
 local inventory_input = require("input.inventory")
 local pause_input = require("input.pause")
+local preparation_input = require("input.preparation")
 
 local renderer = require("render.love")
 local pause_view = require("render.pause")
+local preparation_view = require("render.preparation")
 
 local game = Game:new()
 
@@ -60,6 +62,8 @@ function love.update(dt)
 	elseif game.show_pause then
 		action = pause_input.get_action(key)
 
+	elseif game.show_preparation then
+		action = preparation_input.get_action(key)
 	elseif key == "1" then
 		action = "1"
 	elseif key == "2" then
@@ -83,5 +87,9 @@ function love.draw()
 
 	if game.show_pause then
 		pause_view.draw(game:get_draw_data())
+	end
+
+	if game.show_preparation then
+		preparation_view.draw(game:get_draw_data())
 	end
 end

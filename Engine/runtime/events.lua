@@ -7,6 +7,8 @@ local MessagePanel = require("Engine.runtime.message_panel")
 
 local SYMBOLS = {"△", "□", "○", "◇"}
 
+local MAX_DISCOVERY_LOG = 10
+
 local function trial_resolve(game, event, choice)
 	local trial = event.trial
 	local expected = trial.sequence[trial.step]
@@ -60,6 +62,8 @@ local function trial_resolve(game, event, choice)
 					MessagePanel.push_passive("A prayer knot forms in your hand, woven from the trial's last breath.\nRecovered\nPrayer Knot")
 				end
 				g.player.discovery_flags.prayer_knot_recovered = true
+			else
+				MessagePanel.push_passive("The seal resonates. The prayer is complete.")
 			end
 
 			e.done = true
@@ -197,6 +201,8 @@ local EVENT_DEFS = {
 			if Equipment.grant(player, "ash_charm", game.floor, game.current_region.name, "Crypt Sarcophagus") then
 				msg = msg .. "A fragment of ash charm rests within."
 				MessagePanel.push_passive("Recovered\nAsh Charm")
+			elseif Equipment.has_id(player, "ash_charm") then
+				msg = msg .. "A familiar fragment of ash charm rests within."
 			end
 
 			local roll = love.math.random()
@@ -480,6 +486,8 @@ local EVENT_DEFS = {
 			if Equipment.grant(game.player, "surveyors_knife", game.floor, game.current_region.name, "Fallen Explorer") then
 				msg = msg .. " A worn knife rests in their grip."
 				MessagePanel.push_passive("Recovered\nSurveyor's Knife")
+			elseif Equipment.has_id(game.player, "surveyors_knife") then
+				msg = msg .. " A familiar knife rests in their grip."
 			end
 
 			if Artifacts.grant(game.player, "broken_compass", game.floor, game.current_region.name, "Fallen Explorer") then
@@ -541,6 +549,8 @@ local EVENT_DEFS = {
 			if Equipment.grant(game.player, "pilgrims_staff", game.floor, game.current_region.name, "Pilgrim Pack") then
 				msg = msg .. " A weathered staff rests beside the pack."
 				MessagePanel.push_passive("Recovered\nPilgrim's Staff")
+			elseif Equipment.has_id(game.player, "pilgrims_staff") then
+				msg = msg .. " A familiar staff rests beside the pack."
 			end
 
 			if love.math.random() < 0.50 then
@@ -640,6 +650,8 @@ local EVENT_DEFS = {
 			if Equipment.grant(game.player, "echo_talisman", game.floor, game.current_region.name, "Forgotten Shrine") then
 				msg = msg .. " An echo talisman hums beneath the idol."
 				MessagePanel.push_passive("Recovered\nEcho Talisman")
+			elseif Equipment.has_id(game.player, "echo_talisman") then
+				msg = msg .. " A familiar talisman hums beneath the idol."
 			end
 
 			if not Artifacts.has(game.player, "cracked_idol") then
@@ -667,6 +679,8 @@ local EVENT_DEFS = {
 			if Equipment.grant(game.player, "veil_hook", game.floor, game.current_region.name, "Watcher Remains") then
 				msg = msg .. " A hooked blade rests among the bones."
 				MessagePanel.push_passive("Recovered\nVeil Hook")
+			elseif Equipment.has_id(game.player, "veil_hook") then
+				msg = msg .. " A familiar hooked blade rests among the bones."
 			end
 
 			return {message = msg}
@@ -687,6 +701,8 @@ local EVENT_DEFS = {
 			if Equipment.grant(game.player, "ash_charm", game.floor, game.current_region.name, "Charred Remains") then
 				msg = msg .. " A fragment of ash charm survives the flames."
 				MessagePanel.push_passive("Recovered\nAsh Charm")
+			elseif Equipment.has_id(game.player, "ash_charm") then
+				msg = msg .. " A familiar fragment of ash charm survives the flames."
 			end
 
 			if msg == "" then
@@ -757,8 +773,9 @@ local EVENT_DEFS = {
 			local items = {}
 
 			if loot.gold and loot.gold > 0 then
-				game.player.gold = game.player.gold + loot.gold
-				table.insert(items, loot.gold .. " gold")
+				local before = game.player.gold
+				Reward.gold(game.player, loot.gold, "sentinel_cache")
+				table.insert(items, (game.player.gold - before) .. " gold")
 			end
 
 			if loot.veil_shards and loot.veil_shards > 0 then
@@ -800,6 +817,13 @@ local EVENT_DEFS = {
 						local def = Equipment.def(eq.id)
 						if def then
 							MessagePanel.push_passive("Recovered\n" .. def.name)
+						end
+					elseif Equipment.has_id(game.player, eq.id) then
+						local def = Equipment.def(eq.id)
+						if def then
+							loot.sentinel_msg = "The sentinel's remains yield nothing new — the "
+								.. def.name:lower()
+								.. " is already yours."
 						end
 					end
 				end
@@ -902,7 +926,7 @@ function M.resolve(game, event, choice)
 					game.player.discovery_log,
 					event.type
 				)
-				if #game.player.discovery_log > 10 then
+				if #game.player.discovery_log > MAX_DISCOVERY_LOG then
 					table.remove(
 						game.player.discovery_log,
 						1
@@ -921,7 +945,7 @@ function M.resolve(game, event, choice)
 				game.player.discovery_log,
 				event.type
 			)
-			if #game.player.discovery_log > 10 then
+			if #game.player.discovery_log > MAX_DISCOVERY_LOG then
 				table.remove(
 					game.player.discovery_log,
 					1

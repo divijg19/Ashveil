@@ -25,6 +25,9 @@ local Dice = require("systems.dice")
 local Scout = require("systems.scout")
 local Knowledge = require("systems.knowledge")
 
+local STANCES = {"guarded", "aggressive", "focused"}
+local BASE_MAX_VITALITY = 10
+
 local Compositions = require("world.compositions")
 local movement = require("systems.movement")
 local ai = require("systems.ai")
@@ -54,7 +57,7 @@ function Game:new()
 			x = spawn.x,
 			y = spawn.y,
 			stats = {
-				vitality = 10,
+				vitality = BASE_MAX_VITALITY,
 				strength = 1,
 				resolve = 1,
 				perception = 1,
@@ -82,14 +85,17 @@ function Game:new()
 				gold_mult = 0,
 				variant_damage = 0,
 			},
-			max_vitality = 10,
-			base_max_vitality = 10,
+			base_max_vitality = BASE_MAX_VITALITY,
 			stance = "guarded",
 			floor_heal_used = false,
 			blessing_doubled = false,
 			trial_mod = nil,
 			discovery_flags = {},
 			discovery_log = {},
+			preparation_state = {
+				cursor = 1,
+				stance = "guarded",
+			},
 		},
 
 		enemies = {},
@@ -123,6 +129,8 @@ function Game:new()
 		show_character = false,
 
 		show_inventory = false,
+
+		show_preparation = false,
 
 		show_pause = false,
 
@@ -172,6 +180,7 @@ function Game:update(action, dt)
 	if self.is_game_over then
 		self.show_character = false
 		self.show_pause = false
+		self.show_preparation = false
 		return
 	end
 
@@ -198,6 +207,11 @@ function Game:update(action, dt)
 
 	if self.show_pause then
 		self:update_pause(action)
+		return
+	end
+
+	if self.show_preparation then
+		self:update_preparation(action)
 		return
 	end
 
@@ -283,8 +297,7 @@ function Game:update_character(action)
 			self.character_sheet.selection + 1
 		)
 	elseif action == "confirm" then
-		local stances = {"guarded", "aggressive", "focused"}
-		self.player.stance = stances[
+		self.player.stance = STANCES[
 			self.character_sheet.selection
 		]
 	end
@@ -352,6 +365,90 @@ function Game:update_inventory(action)
 			Equipment.unequip(self.player, def.kind)
 		end
 		return
+	end
+end
+
+function Game:update_preparation(action)
+	if not action then
+		return
+	end
+
+	local prep = self.player.preparation_state
+	if not prep then return end
+
+	if action == "close" then
+		self.show_preparation = false
+		return
+	end
+
+	if action == "up" then
+		prep.cursor = math.max(1, prep.cursor - 1)
+		return
+	end
+
+	if action == "down" then
+		prep.cursor = math.min(3, prep.cursor + 1)
+		return
+	end
+
+	local weapon_slots = {}
+	local charm_slots = {}
+	local eq = self.player.inventory and self.player.inventory.equipment or {}
+	for _, inst in ipairs(eq) do
+		local def = Equipment.def(inst.id)
+		if def then
+			if def.kind == "weapon" then
+				table.insert(weapon_slots, inst)
+			elseif def.kind == "charm" then
+				table.insert(charm_slots, inst)
+			end
+		end
+	end
+
+	if prep.cursor == 1 then
+		if action == "left" or action == "right" then
+			local current = Equipment.equipped_instance(self.player, "weapon")
+			local current_id = current and current.id or nil
+			local idx = 0
+			for i, inst in ipairs(weapon_slots) do
+				if inst.id == current_id then idx = i break end
+			end
+			if #weapon_slots == 0 then return end
+			idx = idx + (action == "right" and 1 or -1)
+			if idx < 1 then idx = #weapon_slots end
+			if idx > #weapon_slots then idx = 1 end
+			Equipment.equip(self.player, "weapon", weapon_slots[idx].instance_id)
+		end
+	elseif prep.cursor == 2 then
+		if action == "left" or action == "right" then
+			local current = Equipment.equipped_instance(self.player, "charm")
+			local current_id = current and current.id or nil
+			local idx = 0
+			for i, inst in ipairs(charm_slots) do
+				if inst.id == current_id then idx = i break end
+			end
+			if #charm_slots == 0 then return end
+			idx = idx + (action == "right" and 1 or -1)
+			if idx < 1 then idx = #charm_slots end
+			if idx > #charm_slots then idx = 1 end
+			Equipment.equip(self.player, "charm", charm_slots[idx].instance_id)
+		end
+	elseif prep.cursor == 3 then
+		if action == "left" or action == "right" then
+			local idx = 0
+			for i, s in ipairs(STANCES) do
+				if s == prep.stance then idx = i break end
+			end
+			idx = idx + (action == "right" and 1 or -1)
+			if idx < 1 then idx = #STANCES end
+			if idx > #STANCES then idx = 1 end
+			prep.stance = STANCES[idx]
+		end
+	end
+
+	if action == "confirm" then
+		self.player.stance = prep.stance
+		self.show_preparation = false
 	end
 end
 
@@ -489,6 +586,8 @@ function Game:update_transition(dt)
 			self.transition.data
 
 		if data and data.descent then
+			local prev_region = self.current_region
+
 			Floor.next(
 				self,
 				Map,
@@ -503,6 +602,13 @@ function Game:update_transition(dt)
 			)
 
 			self.scene:set("explore")
+
+			if self.current_region ~= prev_region then
+				local prep = self.player.preparation_state
+				prep.cursor = 1
+				prep.stance = self.player.stance
+				self.show_preparation = true
+			end
 		elseif data and data.enemy then
 			self.scene:set("combat")
 
@@ -517,6 +623,14 @@ function Game:update_transition(dt)
 				self.player,
 				data.enemy.archetype
 			)
+
+			local recognition = Knowledge.recognize(
+				self.player,
+				data.enemy.archetype
+			)
+			if recognition then
+				MessagePanel.push_passive(recognition)
+			end
 		else
 			self.scene:set("explore")
 		end
@@ -562,7 +676,19 @@ function Game:update_combat(action, dt)
 			variant_tendency
 		)
 		local tell = Tells.select_tell(arch, c.enemy_intent)
-		c.tell = tell.text
+		local tier = Knowledge.tier(
+			self.player,
+			c.enemy.archetype
+		)
+		local recogn_tell = Tells.get_recognition_tell(
+			c.enemy.archetype,
+			tier
+		)
+		if recogn_tell ~= "" then
+			c.tell = tell.text .. " " .. recogn_tell
+		else
+			c.tell = tell.text
+		end
 		MessagePanel.push_passive(c.tell)
 
 		-- Insight decrement
@@ -1007,17 +1133,19 @@ function Game:exit_combat(player_won)
 	if c.enemy
 		and c.enemy.archetype == "sentinel"
 	then
-		-- Warden's Blade: first sentinel kill (Option A: flag at combat win)
+		-- Warden's Blade: first sentinel kill (Option A: flag at combat win).
+		-- The blade is always placed in corpse loot so a repeat kill reaches the
+		-- "already yours" echo branch in corpse_loot resolve (grant refusal).
 		if not self.player.discovery_flags.wardens_blade_recovered then
 			self.player.discovery_flags.wardens_blade_recovered = true
-			corpse_loot.equipment = corpse_loot.equipment or {}
-			table.insert(corpse_loot.equipment, {
-				id = "wardens_blade",
-				source = "Echo Chamber Sentinel",
-				floor = self.floor,
-				region = self.current_region.name,
-			})
 		end
+		corpse_loot.equipment = corpse_loot.equipment or {}
+		table.insert(corpse_loot.equipment, {
+			id = "wardens_blade",
+			source = "Echo Chamber Sentinel",
+			floor = self.floor,
+			region = self.current_region.name,
+		})
 
 		if love.math.random() < 0.50 then
 			local relic_id = Relics.random_unowned(self.player)
@@ -1267,6 +1395,9 @@ function Game:get_draw_data()
 	d.character_sheet = self.character_sheet
 	d.inventory_state = self.inventory_state
 	d.wound_anomaly_active = self.wound_anomaly_active
+	d.show_preparation = self.show_preparation
+	d.preparation_state = self.player.preparation_state
+	d.current_region = self.current_region
 	return d
 end
 

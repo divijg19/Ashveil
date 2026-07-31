@@ -98,6 +98,23 @@ local TELLS = {
 	},
 }
 
+local RECOGNITION_TELLS = {
+	studied = {
+		brute = "You recognize their patterns now.",
+		stalker = "You know how this one moves.",
+		watcher = "Their patience no longer unsettles you.",
+		fanatic = "Their fervor is no longer a surprise.",
+		sentinel = "The silence around them is familiar.",
+	},
+	mastered = {
+		brute = "Their violence follows a known pattern.",
+		stalker = "Their strikes arrive as you predicted.",
+		watcher = "Their attention shifts where you expect.",
+		fanatic = "Their recklessness plays out as you expected.",
+		sentinel = "Even their stillness reveals its purpose.",
+	},
+}
+
 function M.select_tell(archetype, intent)
 	local pool = TELLS[archetype]
 	if not pool then
@@ -119,6 +136,17 @@ function M.select_tell(archetype, intent)
 	end
 
 	return candidates[love.math.random(#candidates)]
+end
+
+function M.get_recognition_tell(archetype, tier)
+	if tier == "unknown" then
+		return ""
+	end
+	local lines = RECOGNITION_TELLS[tier]
+	if not lines then
+		return ""
+	end
+	return lines[archetype] or ""
 end
 
 return M

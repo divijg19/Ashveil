@@ -1,4 +1,3 @@
-local MessagePanel = require("Engine.runtime.message_panel")
 local Equipment = require("Engine.runtime.equipment")
 
 local M = {}
@@ -9,7 +8,10 @@ function M.vitality(player, amount)
 		player.buff_doubled = nil
 	end
 
-	player.stats.vitality = player.stats.vitality + amount
+	player.stats.vitality = math.min(
+		player.stats.vitality + amount,
+		Equipment.effective_max_vitality(player)
+	)
 end
 
 function M.blessing(player, name)
@@ -48,18 +50,6 @@ end
 
 function M.veil_shards(player, amount)
 	player.veil_shards = (player.veil_shards or 0) + amount
-end
-
-function M.present_loot(items)
-	if not items or #items == 0 then
-		return
-	end
-
-	local lines = {"Loot Recovered:"}
-	for _, item in ipairs(items) do
-		table.insert(lines, "  • " .. item)
-	end
-	MessagePanel.push_passive(table.concat(lines, "\n"))
 end
 
 return M
