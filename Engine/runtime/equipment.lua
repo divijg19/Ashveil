@@ -99,18 +99,6 @@ function M.def(id)
 	return ALL_DEFS[id]
 end
 
-function M.weapon_defs()
-	return WEAPON_DEFS
-end
-
-function M.charm_defs()
-	return CHARM_DEFS
-end
-
-function M.all_defs()
-	return ALL_DEFS
-end
-
 function M.find_instance(player, instance_id)
 	if not player or not player.inventory or not player.inventory.equipment then
 		return nil
@@ -166,7 +154,7 @@ function M.grant(player, id, floor, region, source)
 	return instance
 end
 
-function M.compute_mods(player)
+local function compute_mods(player)
 	local mods = {
 		attack = 0,
 		scout = 0,
@@ -204,7 +192,7 @@ function M.equip(player, slot, instance_id)
 	local def = ALL_DEFS[item.id]
 	if not def or def.kind ~= slot then return false end
 	player.equipment[slot] = instance_id
-	player.equipment_mods = M.compute_mods(player)
+	player.equipment_mods = compute_mods(player)
 	local name = def.name or item.id
 	MessagePanel.push_passive("Equipped: " .. name)
 	return true
@@ -216,27 +204,11 @@ function M.unequip(player, slot)
 	local instance = M.find_instance(player, player.equipment[slot])
 	local def = instance and ALL_DEFS[instance.id]
 	player.equipment[slot] = nil
-	player.equipment_mods = M.compute_mods(player)
+	player.equipment_mods = compute_mods(player)
 	if def and def.name then
 		MessagePanel.push_passive("Unequipped: " .. def.name)
 	end
 	return true
-end
-
-function M.short_name(id)
-	local def = ALL_DEFS[id]
-	return def and def.short or "???"
-end
-
-function M.has_equipped(player, id)
-	if not player or not player.equipment then return false end
-	for slot, instance_id in pairs(player.equipment) do
-		local instance = M.find_instance(player, instance_id)
-		if instance and instance.id == id then
-			return true
-		end
-	end
-	return false
 end
 
 return M

@@ -1,5 +1,7 @@
 local M = {}
 
+local MASTERY_ENCOUNTERS = 10
+
 local ARCHETYPE_FACTS = {
 	brute = {
 		favors_heavy = { text = "Favors heavy, powerful strikes.", discovered = false },
@@ -41,6 +43,7 @@ function M.init(player)
 				discovered = false,
 			}
 		end
+		player.knowledge[arch].recognized_tier = "unknown"
 	end
 end
 
@@ -109,7 +112,7 @@ function M.mastered(player, archetype)
 		return false
 	end
 	local entry = player.knowledge[archetype]
-	if not entry or entry.encounters < 10 then
+	if not entry or entry.encounters < MASTERY_ENCOUNTERS then
 		return false
 	end
 	for _, fact in pairs(entry.facts) do
@@ -118,6 +121,39 @@ function M.mastered(player, archetype)
 		end
 	end
 	return true
+end
+
+function M.tier(player, archetype)
+	if not player.knowledge or not player.knowledge[archetype] then
+		return "unknown"
+	end
+	if M.mastered(player, archetype) then
+		return "mastered"
+	end
+	if M.discovered_count(player, archetype) >= 1 then
+		return "studied"
+	end
+	return "unknown"
+end
+
+function M.recognize(player, archetype)
+	local tier = M.tier(player, archetype)
+	if not player.knowledge or not player.knowledge[archetype] then
+		return nil
+	end
+	local entry = player.knowledge[archetype]
+	if tier == entry.recognized_tier then
+		return nil
+	end
+	entry.recognized_tier = tier
+	if tier == "studied" then
+		return "You have begun to learn this archetype."
+	elseif tier == "mastered" then
+		return "You know the "
+			.. archetype:gsub("^%l", string.upper)
+			.. " completely."
+	end
+	return nil
 end
 
 return M
